@@ -3,6 +3,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 
+# Just keep this out for the moment - helps focus the mind
 from Geometry import Geometry
 
 
@@ -12,9 +13,12 @@ class Triangle:
         self.vertexLoc = glGetAttribLocation(shader, "position")
         self.vertices = np.array([0.0, 0.5, 0.0,
                                   -0.5, -0.5, 0.0,
-                                  0.5, -0.5, 0.0], dtype=np.float32)
+                                  0.5, -0.5, 0.0,
+                                  0.0, -0.5, 0.0,
+                                  0.5, 0.5, 0.0,
+                                  -0.5, 0.5, 0.0], dtype=np.float32)
 
-        self.vertexCount = 3
+        self.vertexCount = 6
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
@@ -44,7 +48,7 @@ class OpenGLWindow:
 
         return shader
 
-    def initGL(self, screen_width=640, screen_height=480):
+    def initGL(self, screen_width=2560 , screen_height=1440):
         pg.init()
 
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
@@ -58,7 +62,7 @@ class OpenGLWindow:
         # Uncomment these two lines when perspective camera has been implemented
         #glEnable(GL_CULL_FACE)
         #glCullFace(GL_BACK)
-        glClearColor(0, 0, 0, 1)
+        glClearColor(0.2, 0, 0, 1)
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
@@ -70,13 +74,13 @@ class OpenGLWindow:
         glUseProgram(self.shader)
 
         colorLoc = glGetUniformLocation(self.shader, "objectColor")
-        glUniform3f(colorLoc, 1.0, 1.0, 1.0)
+        glUniform3f(colorLoc, 0.4, 1.0, 1.0)
 
         # Uncomment this for triangle rendering
-        self.triangle = Triangle(self.shader)
+        # self.triangle = Triangle(self.shader)
 
         # Uncomment this for model rendering
-        #self.cube = Geometry('./resources/cube.obj')
+        self.cube = Geometry('./resources/prism.obj')
 
         print("Setup complete!")
 
@@ -86,10 +90,10 @@ class OpenGLWindow:
         glUseProgram(self.shader)  # You may not need this line
 
         #Uncomment this for triangle rendering
-        glDrawArrays(GL_TRIANGLES, 0, self.triangle.vertexCount)
+        # glDrawArrays(GL_TRIANGLES, 0, self.triangle.vertexCount)
 
         # Uncomment this for model rendering
-        #glDrawArrays(GL_TRIANGLES, 0, self.cube.vertexCount)
+        glDrawArrays(GL_TRIANGLES, 0, self.cube.vertexCount)
 
 
         # Swap the front and back buffers on the window, effectively putting what we just "drew"

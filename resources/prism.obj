@@ -1,0 +1,15 @@
+# Blender v2.91.0 OBJ File: 'rotated_simple_tetrahedron'
+# www.blender.org
+o RotatedTetrahedron
+
+# List of vertices, with (x, y, z) coordinates after rotation
+v 0.0 1.0 0.0
+v 0.0 -1.0 -1.41421356
+v 1.41421356 -1.0 0.0
+v -1.41421356 -1.0 0.0
+
+# List of faces, each face is a list of vertex indices
+f 1 2 3
+f 1 3 4
+f 1 4 2
+f 2 4 3
