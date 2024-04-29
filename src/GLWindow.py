@@ -17,7 +17,7 @@ class Triangle:
 
                                   0.5, -0.5, 0.0, 0.0, 0.0, 0.0,
                                   -0.5, -0.5, 0.0, 0.0, 0.0, 0.0,
-                                  -0.5, 0.5, 0.0, 0.0, 0.0, 0.0,], dtype=np.float32)
+                                  -0.5, 0.5, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
 
         self.vertexCount = 6
         self.vbo = glGenBuffers(1)
