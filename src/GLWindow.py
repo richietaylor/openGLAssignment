@@ -2,6 +2,7 @@ import pygame as pg
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
+import pyrr
 
 # Just keep this out for the moment - helps focus the mind
 from Geometry import Geometry
@@ -11,15 +12,14 @@ class Triangle:
 
     def __init__(self, shader):
         self.vertexLoc = glGetAttribLocation(shader, "position")
-        self.vertices = np.array([0.5, 0.5, 0.0, 1.0, 0.0, 0.0,
-                                  0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
-                                  -0.5, 0.5, 0.0, 1.0, 0.0, 0.0,
+        self.vertices = np.array([0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0,1.0,
+                                  0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0,1.0,
+                                  -0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.5,1.0,
+                                  0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0,1.0,
+                                  -0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0,1.0,
+                                  -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.5,1.0,], dtype=np.float32)
 
-                                  0.5, -0.5, 0.0, 0.0, 0.0, 0.0,
-                                  -0.5, -0.5, 0.0, 0.0, 0.0, 0.0,
-                                  -0.5, 0.5, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
-
-        self.vertexCount = 6
+        self.vertex_count = 6
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_STATIC_DRAW)
@@ -32,6 +32,8 @@ class Triangle:
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
 
+        glEnableVertexAttribArray(2)
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(24))
         # glEnableVertexAttribArray(2)
         # glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(24))
 
@@ -75,11 +77,151 @@ class Material:
 
         glDeleteTextures(1, (self.texture,))
 
+class Entity:
+    """
+        A basic object in the world, with a position and rotation.
+    """
+
+
+    def __init__(self, position: list[float], eulers: list[float]):
+
+
+        self.position = np.array(position, dtype=np.float32)
+        self.eulers = np.array(eulers, dtype=np.float32)
+    
+    def update(self) -> None:
+
+        self.eulers[1] += 0.25
+        
+        if self.eulers[1] > 360:
+            self.eulers[1] -= 360
+
+    def get_model_transform(self) -> np.ndarray:
+        """
+            Returns the entity's model to world
+            transformation matrix.
+        """
+
+        model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+
+        model_transform = pyrr.matrix44.multiply(
+            m1=model_transform, 
+            m2=pyrr.matrix44.create_from_axis_rotation(
+                axis = [0, 1, 0],
+                theta = np.radians(self.eulers[1]), 
+                dtype = np.float32
+            )
+        )
+
+        return pyrr.matrix44.multiply(
+            m1=model_transform, 
+            m2=pyrr.matrix44.create_from_translation(
+                vec=np.array(self.position),dtype=np.float32
+            )
+        )
+
+class CubeMesh:
+
+
+    def __init__(self):
+
+
+        # x, y, z, s, t
+        vertices = (
+            -0.5, -0.5, -0.5, 0, 0,
+             0.5, -0.5, -0.5, 1, 0,
+             0.5,  0.5, -0.5, 1, 1,
+
+             0.5,  0.5, -0.5, 1, 1,
+            -0.5,  0.5, -0.5, 0, 1,
+            -0.5, -0.5, -0.5, 0, 0,
+
+            -0.5, -0.5,  0.5, 0, 0,
+             0.5, -0.5,  0.5, 1, 0,
+             0.5,  0.5,  0.5, 1, 1,
+
+             0.5,  0.5,  0.5, 1, 1,
+            -0.5,  0.5,  0.5, 0, 1,
+            -0.5, -0.5,  0.5, 0, 0,
+
+            -0.5,  0.5,  0.5, 1, 0,
+            -0.5,  0.5, -0.5, 1, 1,
+            -0.5, -0.5, -0.5, 0, 1,
+
+            -0.5, -0.5, -0.5, 0, 1,
+            -0.5, -0.5,  0.5, 0, 0,
+            -0.5,  0.5,  0.5, 1, 0,
+
+             0.5,  0.5,  0.5, 1, 0,
+             0.5,  0.5, -0.5, 1, 1,
+             0.5, -0.5, -0.5, 0, 1,
+
+             0.5, -0.5, -0.5, 0, 1,
+             0.5, -0.5,  0.5, 0, 0,
+             0.5,  0.5,  0.5, 1, 0,
+
+            -0.5, -0.5, -0.5, 0, 1,
+             0.5, -0.5, -0.5, 1, 1,
+             0.5, -0.5,  0.5, 1, 0,
+
+             0.5, -0.5,  0.5, 1, 0,
+            -0.5, -0.5,  0.5, 0, 0,
+            -0.5, -0.5, -0.5, 0, 1,
+
+            -0.5,  0.5, -0.5, 0, 1,
+             0.5,  0.5, -0.5, 1, 1,
+             0.5,  0.5,  0.5, 1, 0,
+
+             0.5,  0.5,  0.5, 1, 0,
+            -0.5,  0.5,  0.5, 0, 0,
+            -0.5,  0.5, -0.5, 0, 1
+        )
+        self.vertex_count = len(vertices)//5
+        vertices = np.array(vertices, dtype=np.float32)
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
+
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
+    
+    def arm_for_drawing(self) -> None:
+        """
+            Arm the triangle for drawing.
+        """
+        glBindVertexArray(self.vao)
+    
+    def draw(self) -> None:
+        """
+            Draw the triangle.
+        """
+
+        glDrawArrays(GL_TRIANGLES, 0, self.vertex_count)
+
+    def destroy(self) -> None:
+        """
+            Free any allocated memory.
+        """
+        
+        glDeleteVertexArrays(1,(self.vao,))
+        glDeleteBuffers(1,(self.vbo,))
+
 class OpenGLWindow:
 
     def __init__(self):
         self.triangle = None
         self.clock = pg.time.Clock()
+
+        # Thanks
+        # self._set_onetime_uniforms()
+
+        # self._get_uniform_locations()
 
     def loadShaderProgram(self, vertex, fragment):
         with open(vertex, 'r') as f:
@@ -120,13 +262,38 @@ class OpenGLWindow:
 
         colorLoc = glGetUniformLocation(self.shader, "objectColor")
         glUniform3f(colorLoc, 0.4, 1.0, 1.0)
-
+        self.whaat_texture = Material("resources/images1.jpeg")
         # Uncomment this for triangle rendering
-        self.triangle = Triangle(self.shader)
+        # self.triangle = Triangle(self.shader)
 
+        
         # Uncomment this for model rendering
         # self.cube = Geometry('./resources/prism.obj')
 
+        self.cube = Entity(
+            position = [0,0,-3],
+            eulers=[0,0,0]
+            )
+        
+        self.cube_mesh = CubeMesh()
+
+        
+        
+
+        projection_transform = pyrr.matrix44.create_perspective_projection(
+            fovy = 45, aspect = 2560/1440,
+            near = 0.1, far = 10, dtype=np.float32
+        )
+
+        glUniformMatrix4fv(
+            glGetUniformLocation(self.shader, "projection"),
+            1, GL_FALSE, projection_transform
+        )
+
+        self.modeMatrixLocation = glGetUniformLocation(self.shader, "model")
+
+        self.cube_mesh.arm_for_drawing()
+        self.cube_mesh.draw()
         print("Setup complete!")
 
 
@@ -135,10 +302,10 @@ class OpenGLWindow:
         glUseProgram(self.shader)  # You may not need this line
 
         #Uncomment this for triangle rendering
-        glDrawArrays(GL_TRIANGLES, 0, self.triangle.vertexCount)
+        # glDrawArrays(GL_TRIANGLES, 0, self.triangle.vertex_count)
 
         # Uncomment this for model rendering
-        # glDrawArrays(GL_TRIANGLES, 0, self.cube.vertexCount)
+        glDrawArrays(GL_TRIANGLES, 0, self.cube_mesh.vertex_count)
 
 
         # Swap the front and back buffers on the window, effectively putting what we just "drew"
@@ -148,6 +315,9 @@ class OpenGLWindow:
     def cleanup(self):
         glDeleteVertexArrays(1, (self.vao,))
         # Uncomment for triangle rendering
-        self.triangle.cleanup()
+        # self.triangle.cleanup()
         # Uncomment for model rendering
-        # self.cube.cleanup()
+        self.cube_mesh.cleanup()
+
+        # self.cube.destroy()
+        # self.cube_mesh.destroy()
