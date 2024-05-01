@@ -142,85 +142,109 @@ def make_corner(corner_description: str,
     for element in vn[int(v_vt_vn[2]) - 1]:
         vertices.append(element)
 
+# class Entity:
+#     """
+#         A basic object in the world, with a position and rotation.
+#     """
+#     def __init__(self, position, eulers, orbit_center=None, orbit_radius=0, orbit_speed=0):
+#         self.position = np.array(position, dtype=np.float32)
+#         self.eulers = np.array(eulers, dtype=np.float32)
+#         self.orbit_center = orbit_center if orbit_center is not None else [0, 0, 0]
+#         self.orbit_radius = orbit_radius
+#         self.orbit_speed = orbit_speed
+#         self.orbit_angle = 0  # Initial angle for the orbit
+    
+
+#     def update(self, delta_time):
+#         # Update position if entity orbits another object
+#         if self.orbit_radius > 0:
+#             self.orbit_angle += self.orbit_speed * delta_time
+#             self.position[0] = self.orbit_center[0] + self.orbit_radius * math.cos(self.orbit_angle)
+#             self.position[2] = self.orbit_center[2] + self.orbit_radius * math.sin(self.orbit_angle)
+        
+#         # Simple rotation update
+#         self.eulers[1] += 0.25 * delta_time
+#         if self.eulers[1] >= 360:
+#             self.eulers[1] -= 360
+
+   
+#     def get_model_transform(self):
+#         model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+#         rotation = pyrr.matrix44.create_from_eulers(
+#             np.radians(self.eulers), dtype=np.float32
+#         )
+#         model_transform = pyrr.matrix44.multiply(
+#             m1=model_transform,
+#             m2=rotation
+#         )
+#         translation = pyrr.matrix44.create_from_translation(
+#             self.position, dtype=np.float32
+#         )
+#         return pyrr.matrix44.multiply(
+#             m1=model_transform,
+#             m2=translation
+#         )
 class Entity:
-    """
-        A basic object in the world, with a position and rotation.
-    """
-
-
-    # def __init__(self, position: list[float], eulers: list[float]):
-
-    #     self.position = np.array(position, dtype=np.float32)
-    #     self.eulers = np.array(eulers, dtype=np.float32)
-    def __init__(self, position, eulers, orbit_center=None, orbit_radius=0, orbit_speed=0):
+    def __init__(self, position, eulers, scale=1, orbit_center=None, orbit_radius=0, orbit_speed=0):
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
-        self.orbit_center = orbit_center if orbit_center is not None else [0, 0, 0]
+        self.scale = scale
+        self.orbit_center = np.array(orbit_center, dtype=np.float32) if orbit_center is not None else None
         self.orbit_radius = orbit_radius
         self.orbit_speed = orbit_speed
-        self.orbit_angle = 0  # Initial angle for the orbit
-    
-    # def update(self) -> None:
-        # """
-        #     Update the object, this is hard coded for now.
-        # """
-
-        # self.eulers[1] += 0.25
-        
-        # if self.eulers[1] > 360:
-        #     self.eulers[1] -= 360
+        self.orbit_angle = 0
 
     def update(self, delta_time):
-        # Update position if entity orbits another object
-        if self.orbit_radius > 0:
+        # Update orbiting position if applicable
+        if self.orbit_center is not None and self.orbit_radius > 0:
             self.orbit_angle += self.orbit_speed * delta_time
             self.position[0] = self.orbit_center[0] + self.orbit_radius * math.cos(self.orbit_angle)
             self.position[2] = self.orbit_center[2] + self.orbit_radius * math.sin(self.orbit_angle)
-        
-        # Simple rotation update
-        self.eulers[1] += 0.25 * delta_time
-        if self.eulers[1] >= 360:
+
+        # Update rotation
+        self.eulers[1] += 0.25 * delta_time  # Increment rotation about Y-axis
+        if self.eulers[1] > 360:
             self.eulers[1] -= 360
 
-    # def get_model_transform(self) -> np.ndarray:
-    #     """
-    #         Returns the entity's model to world
-    #         transformation matrix.
-    #     """
-
-    #     model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-
-    #     model_transform = pyrr.matrix44.multiply(
-    #         m1=model_transform, 
-    #         m2=pyrr.matrix44.create_from_axis_rotation(
-    #             axis = [0, 1, 0],
-    #             theta = np.radians(self.eulers[1]), 
-    #             dtype = np.float32
-    #         )
-    #     )
-
-    #     return pyrr.matrix44.multiply(
-    #         m1=model_transform, 
-    #         m2=pyrr.matrix44.create_from_translation(
-    #             vec=np.array(self.position),dtype=np.float32
-    #         )
-    #     )
     def get_model_transform(self):
-        model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-        rotation = pyrr.matrix44.create_from_eulers(
-            np.radians(self.eulers), dtype=np.float32
-        )
-        model_transform = pyrr.matrix44.multiply(
-            m1=model_transform,
-            m2=rotation
-        )
-        translation = pyrr.matrix44.create_from_translation(
-            self.position, dtype=np.float32
-        )
-        return pyrr.matrix44.multiply(
-            m1=model_transform,
-            m2=translation
-        )
+        scale_matrix = pyrr.matrix44.create_from_scale([self.scale, self.scale, self.scale], dtype=np.float32)
+        rotation_matrix = pyrr.matrix44.create_from_eulers(np.radians(self.eulers), dtype=np.float32)
+        translation_matrix = pyrr.matrix44.create_from_translation(self.position, dtype=np.float32)
+
+        # Apply transformations: scale, then rotate, then translate
+        model_transform = pyrr.matrix44.multiply(translation_matrix, rotation_matrix)
+        model_transform = pyrr.matrix44.multiply(model_transform, scale_matrix)
+        return model_transform
+
+
+    # def get_model_transform(self):
+    #     model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+    #     rotation = pyrr.matrix44.create_from_eulers(
+    #         np.radians(self.eulers), dtype=np.float32
+    #     )
+    #     scale_matrix = pyrr.matrix44.create_from_scale([self.scale, self.scale, self.scale], dtype=np.float32)
+    #     model_transform = pyrr.matrix44.multiply(m1=model_transform, m2=scale_matrix)
+    #     model_transform = pyrr.matrix44.multiply(m1=model_transform, m2=rotation)
+    #     translation = pyrr.matrix44.create_from_translation(
+    #         self.position, dtype=np.float32
+    #     )
+    #     return pyrr.matrix44.multiply(
+    #         m1=model_transform,
+    #         m2=translation
+    #     )
+
+    def get_model_transform(self):
+        # Scale -> Rotate -> Translate
+        scale_matrix = pyrr.matrix44.create_from_scale([self.scale, self.scale, self.scale], dtype=np.float32)
+        rotation_matrix = pyrr.matrix44.create_from_eulers(np.radians(self.eulers), dtype=np.float32)
+        translation_matrix = pyrr.matrix44.create_from_translation(self.position, dtype=np.float32)
+
+        # Start with translation, then rotate, and finally scale (note the reverse application order)
+        model_transform = pyrr.matrix44.multiply(translation_matrix, rotation_matrix)
+        model_transform = pyrr.matrix44.multiply(model_transform, scale_matrix)
+        return model_transform
+
+
 
 class App:
     """
@@ -231,17 +255,6 @@ class App:
 
     def __init__(self):
 
-        # self._set_up_pygame()
-
-        # self._set_up_timer()
-
-        # self._set_up_opengl()
-
-        # self._create_assets()
-
-        # self._set_onetime_uniforms()
-
-        # self._get_uniform_locations()
         self._set_up_pygame()
         self._set_up_timer()
         self._set_up_opengl()
@@ -283,31 +296,26 @@ class App:
 
      # Define positions and files for multiple objects
 
-
-        # positions = [[0, 0, -8], [-3, 0, -5], [2, 0, -10]]
-        # eulers = [[0, 0, 0], [0, 45, 0], [0, 90, 0]]
-        # models = ["sphere-fixed.obj", "sphere-fixed.obj", "suzanne.obj"]
-        # textures = ["diffuse0.jpg", "diffuse.png", "images1.jpeg"]
-
-        # for pos, euler, model_file, texture_file in zip(positions, eulers, models, textures):
-        #     entity = Entity(position=pos, eulers=euler)
-        #     mesh = Mesh(f"resources/{model_file}")
-        #     material = Material(f"resources/{texture_file}")
-        #     self.entities.append(entity)
-        #     self.meshes.append(mesh)
-        #     self.materials.append(material)
-        positions = [[0, 0, -8], [0, 0, -8], [0, 0, -8]]  # Start all at the same position
+        positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]]  # Start all at the same position
         eulers = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        models = ["sphere-fixed.obj", "sphere-fixed.obj", "suzanne.obj"]
-        textures = ["diffuse0.jpg", "diffuse.png", "images1.jpeg"]
+        scales = [2, 1, 1]
+        models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
+        textures = ["sun.jpg", "earth.png", "moon.png"]
         orbit_params = [
             (None, 0, 0),             # First object does not orbit
             ([0, 0, -8], 5, 0.5),     # Second object orbits the first at radius 5
             (None, 3, 1.0)      # Third object also orbits the first (replace with dynamic reference to second if needed)
         ]
 
-        for pos, euler, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, models, textures, orbit_params):
-            entity = Entity(position=pos, eulers=euler, orbit_center=orbit_center, orbit_radius=radius, orbit_speed=speed)
+        # for pos, euler, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, models, textures, orbit_params):
+        #     entity = Entity(position=pos, eulers=euler, orbit_center=orbit_center, orbit_radius=radius, orbit_speed=speed)
+        #     mesh = Mesh(f"resources/{model_file}")
+        #     material = Material(f"resources/{texture_file}")
+        #     self.entities.append(entity)
+        #     self.meshes.append(mesh)
+        #     self.materials.append(material)
+        for pos, euler, scale, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, scales, models, textures, orbit_params):
+            entity = Entity(position=pos, eulers=euler, scale=scale, orbit_center=orbit_center, orbit_radius=radius, orbit_speed=speed)
             mesh = Mesh(f"resources/{model_file}")
             material = Material(f"resources/{texture_file}")
             self.entities.append(entity)
@@ -317,8 +325,7 @@ class App:
         self.shader = create_shader(
             vertex_filepath = "shaders/simple.vert", 
             fragment_filepath = "shaders/simple.frag")
-        
-    
+         
     def _set_onetime_uniforms(self) -> None:
         """
             Some shader data only needs to be set once.
