@@ -165,16 +165,6 @@ class Entity:
         if self.eulers[1] > 360:
             self.eulers[1] -= 360
 
-    def get_model_transform(self):
-        scale_matrix = pyrr.matrix44.create_from_scale([self.scale, self.scale, self.scale], dtype=np.float32)
-        rotation_matrix = pyrr.matrix44.create_from_eulers(np.radians(self.eulers), dtype=np.float32)
-        translation_matrix = pyrr.matrix44.create_from_translation(self.position, dtype=np.float32)
-
-        # Apply transformations: scale, then rotate, then translate
-        model_transform = pyrr.matrix44.multiply(translation_matrix, rotation_matrix)
-        model_transform = pyrr.matrix44.multiply(model_transform, scale_matrix)
-        return model_transform
-
 
 
     def get_model_transform(self):
@@ -210,6 +200,7 @@ class App:
         self._create_assets()
         self._set_onetime_uniforms()
         self._get_uniform_locations()
+        self.running = False
     
     def _set_up_pygame(self) -> None:
         """
@@ -291,61 +282,42 @@ class App:
         glUseProgram(self.shader)
         self.modelMatrixLocation = glGetUniformLocation(self.shader,"model")
     
-    def run(self) -> None:
-        # """ Run the app """
-
-        # running = True
-        # while (running):
-        #     #check events
-        #     for event in pg.event.get():
-        #         if (event.type == pg.QUIT):
-        #             running = False
-            
-        #     for entity in self.entities:
-        #         entity.update()
-            
-        #     #refresh screen
-        #     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        #     glUseProgram(self.shader)
-
-        #     for entity, mesh, material in zip(self.entities, self.meshes, self.materials):
-        #         glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, entity.get_model_transform())
-        #         material.use()
-        #         mesh.arm_for_drawing()
-        #         mesh.draw()
-
-        #     pg.display.flip()
-        #     self.clock.tick(60)
-
-        running = True
+    def run(self):
+        keep_running = True
         last_time = pg.time.get_ticks()
-        while running:
+        while keep_running:
             current_time = pg.time.get_ticks()
             delta_time = (current_time - last_time) / 1000.0  # seconds
             last_time = current_time
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    running = False
+                    keep_running = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:  # Use SPACE to start/stop the animation
+                        self.running = not self.running
 
-                    # Update the orbit center of the third object to the current position of the second object
-            if len(self.entities) > 2:
-                self.entities[2].orbit_center = np.copy(self.entities[1].position)
+            if self.running:
+                # Only update and draw if the animation is running
+                for entity in self.entities:
+                    entity.update(delta_time)
 
-            for entity in self.entities:
-                entity.update(delta_time)
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+                glUseProgram(self.shader)
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            glUseProgram(self.shader)
+                for entity, mesh, material in zip(self.entities, self.meshes, self.materials):
+                    glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, entity.get_model_transform())
+                    material.use()
+                    mesh.arm_for_drawing()
+                    mesh.draw()
 
-            for entity, mesh, material in zip(self.entities, self.meshes, self.materials):
-                glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, entity.get_model_transform())
-                material.use()
-                mesh.arm_for_drawing()
-                mesh.draw()
+                # Update the orbit center of the third object to the current position of the second object
+                if len(self.entities) > 2:
+                    self.entities[2].orbit_center = np.copy(self.entities[1].position)
 
             pg.display.flip()
-            self.clock.tick(60)
+            self.clock.tick(60)  # This controls frame rate; it might be wise to separate drawing and updating rates.
+
 
     def quit(self) -> None:
         """ cleanup the app, run exit code """
