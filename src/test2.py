@@ -204,16 +204,25 @@ class App:
 
     def __init__(self):
 
+        # self._set_up_pygame()
+
+        # self._set_up_timer()
+
+        # self._set_up_opengl()
+
+        # self._create_assets()
+
+        # self._set_onetime_uniforms()
+
+        # self._get_uniform_locations()
         self._set_up_pygame()
-
         self._set_up_timer()
-
         self._set_up_opengl()
-
+        self.entities = []
+        self.meshes = []
+        self.materials = []
         self._create_assets()
-
         self._set_onetime_uniforms()
-
         self._get_uniform_locations()
     
     def _set_up_pygame(self) -> None:
@@ -244,28 +253,35 @@ class App:
         glEnable(GL_DEPTH_TEST)
 
     def _create_assets(self) -> None:
-        """
-            Create all of the assets needed for drawing.
-        """
+        # """
+        #     Create all of the assets needed for drawing.
+        # """
 
-        self.cube = Entity(
-            position = [0,0,-8],
-            eulers = [0,0,0]
-        )
-        self.cube_mesh = Mesh("resources/sphere-fixed.obj")
-        self.wood_texture = Material("resources/diffuse0.jpg")
-
-
-
-        # self.sun = Entity(
-        #     position = [1,1,-9],
+        # self.cube = Entity(
+        #     position = [0,0,-8],
         #     eulers = [0,0,0]
         # )
         # self.cube_mesh = Mesh("resources/sphere-fixed.obj")
-        # self.wood_texture = Material("resources/diffuse.png")
-        # self.shader = create_shader(
-        #     vertex_filepath = "shaders/simple.vert", 
-        #     fragment_filepath = "shaders/simple.frag")
+        # self.wood_texture = Material("resources/diffuse0.jpg")
+
+ # Define positions and files for multiple objects
+        positions = [[0, 0, -8], [-3, 0, -5], [2, 0, -10]]
+        eulers = [[0, 0, 0], [0, 45, 0], [0, 90, 0]]
+        models = ["sphere-fixed.obj", "sphere-fixed.obj", "suzanne.obj"]
+        textures = ["diffuse0.jpg", "diffuse.png", "images1.jpeg"]
+
+        for pos, euler, model_file, texture_file in zip(positions, eulers, models, textures):
+            entity = Entity(position=pos, eulers=euler)
+            mesh = Mesh(f"resources/{model_file}")
+            material = Material(f"resources/{texture_file}")
+            self.entities.append(entity)
+            self.meshes.append(mesh)
+            self.materials.append(material)
+
+
+        self.shader = create_shader(
+            vertex_filepath = "shaders/simple.vert", 
+            fragment_filepath = "shaders/simple.frag")
         
     
     def _set_onetime_uniforms(self) -> None:
@@ -303,30 +319,29 @@ class App:
                 if (event.type == pg.QUIT):
                     running = False
             
-            self.cube.update()
-            self.sun.update()
+            for entity in self.entities:
+                entity.update()
             
             #refresh screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glUseProgram(self.shader)
 
-            glUniformMatrix4fv(
-                self.modelMatrixLocation,1,GL_FALSE,
-                self.cube.get_model_transform())
-            self.wood_texture.use()
-            self.cube_mesh.arm_for_drawing()
-            self.cube_mesh.draw()
+            for entity, mesh, material in zip(self.entities, self.meshes, self.materials):
+                glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, entity.get_model_transform())
+                material.use()
+                mesh.arm_for_drawing()
+                mesh.draw()
 
             pg.display.flip()
-
-            #timing
             self.clock.tick(60)
 
     def quit(self) -> None:
         """ cleanup the app, run exit code """
 
-        self.cube_mesh.destroy()
-        self.wood_texture.destroy()
+        for mesh in self.meshes:
+            mesh.destroy()
+        for material in self.materials:
+            material.destroy()
         glDeleteProgram(self.shader)
         pg.quit()
 
