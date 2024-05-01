@@ -253,10 +253,19 @@ class App:
             eulers = [0,0,0]
         )
         self.cube_mesh = Mesh("resources/sphere-fixed.obj")
-        self.wood_texture = Material("resources/diffuse.png")
-        self.shader = create_shader(
-            vertex_filepath = "shaders/simple.vert", 
-            fragment_filepath = "shaders/simple.frag")
+        self.wood_texture = Material("resources/diffuse0.jpg")
+
+
+
+        # self.sun = Entity(
+        #     position = [1,1,-9],
+        #     eulers = [0,0,0]
+        # )
+        # self.cube_mesh = Mesh("resources/sphere-fixed.obj")
+        # self.wood_texture = Material("resources/diffuse.png")
+        # self.shader = create_shader(
+        #     vertex_filepath = "shaders/simple.vert", 
+        #     fragment_filepath = "shaders/simple.frag")
         
     
     def _set_onetime_uniforms(self) -> None:
@@ -295,6 +304,7 @@ class App:
                     running = False
             
             self.cube.update()
+            self.sun.update()
             
             #refresh screen
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
