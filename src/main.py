@@ -1,5 +1,6 @@
 import pygame as pg
 from GLWindow import *
+from Geometry import Geometry
 
 def main():
 	""" The main method where we create and setup our PyGame program """

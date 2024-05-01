@@ -3,6 +3,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
+from Geometry import Geometry
 
 def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
     """
