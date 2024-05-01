@@ -303,7 +303,7 @@ class App:
         orbit_params = [
             (None, 0, 0),             # First object does not orbit
             ([0, 0, -8], 5, 0.5),     # Second object orbits the first at radius 5
-            ([0, 0, -8], 2, 1.0)      # Third object also orbits the first (replace with dynamic reference to second if needed)
+            (None, 3, 1.0)      # Third object also orbits the first (replace with dynamic reference to second if needed)
         ]
 
         for pos, euler, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, models, textures, orbit_params):
@@ -329,7 +329,7 @@ class App:
 
         projection_transform = pyrr.matrix44.create_perspective_projection(
             fovy = 45, aspect = 640/480, 
-            near = 0.1, far = 10, dtype=np.float32
+            near = 0.1, far = 50, dtype=np.float32
         )
         glUniformMatrix4fv(
             glGetUniformLocation(self.shader,"projection"),
@@ -380,6 +380,10 @@ class App:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
+
+                    # Update the orbit center of the third object to the current position of the second object
+            if len(self.entities) > 2:
+                self.entities[2].orbit_center = np.copy(self.entities[1].position)
 
             for entity in self.entities:
                 entity.update(delta_time)
