@@ -3,6 +3,8 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram,compileShader
 import numpy as np
 import pyrr
+import math
+
 
 def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
     """
@@ -146,53 +148,78 @@ class Entity:
     """
 
 
-    def __init__(self, position: list[float], eulers: list[float]):
-        """
-            Initialize the entity.
+    # def __init__(self, position: list[float], eulers: list[float]):
 
-            Parameters:
-
-                position: the position of the entity.
-
-                eulers: the rotation of the entity
-                        about each axis.
-        """
-
+    #     self.position = np.array(position, dtype=np.float32)
+    #     self.eulers = np.array(eulers, dtype=np.float32)
+    def __init__(self, position, eulers, orbit_center=None, orbit_radius=0, orbit_speed=0):
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
+        self.orbit_center = orbit_center if orbit_center is not None else [0, 0, 0]
+        self.orbit_radius = orbit_radius
+        self.orbit_speed = orbit_speed
+        self.orbit_angle = 0  # Initial angle for the orbit
     
-    def update(self) -> None:
-        """
-            Update the object, this is hard coded for now.
-        """
+    # def update(self) -> None:
+        # """
+        #     Update the object, this is hard coded for now.
+        # """
 
-        self.eulers[1] += 0.25
+        # self.eulers[1] += 0.25
         
-        if self.eulers[1] > 360:
+        # if self.eulers[1] > 360:
+        #     self.eulers[1] -= 360
+
+    def update(self, delta_time):
+        # Update position if entity orbits another object
+        if self.orbit_radius > 0:
+            self.orbit_angle += self.orbit_speed * delta_time
+            self.position[0] = self.orbit_center[0] + self.orbit_radius * math.cos(self.orbit_angle)
+            self.position[2] = self.orbit_center[2] + self.orbit_radius * math.sin(self.orbit_angle)
+        
+        # Simple rotation update
+        self.eulers[1] += 0.25 * delta_time
+        if self.eulers[1] >= 360:
             self.eulers[1] -= 360
 
-    def get_model_transform(self) -> np.ndarray:
-        """
-            Returns the entity's model to world
-            transformation matrix.
-        """
+    # def get_model_transform(self) -> np.ndarray:
+    #     """
+    #         Returns the entity's model to world
+    #         transformation matrix.
+    #     """
 
+    #     model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
+
+    #     model_transform = pyrr.matrix44.multiply(
+    #         m1=model_transform, 
+    #         m2=pyrr.matrix44.create_from_axis_rotation(
+    #             axis = [0, 1, 0],
+    #             theta = np.radians(self.eulers[1]), 
+    #             dtype = np.float32
+    #         )
+    #     )
+
+    #     return pyrr.matrix44.multiply(
+    #         m1=model_transform, 
+    #         m2=pyrr.matrix44.create_from_translation(
+    #             vec=np.array(self.position),dtype=np.float32
+    #         )
+    #     )
+    def get_model_transform(self):
         model_transform = pyrr.matrix44.create_identity(dtype=np.float32)
-
-        model_transform = pyrr.matrix44.multiply(
-            m1=model_transform, 
-            m2=pyrr.matrix44.create_from_axis_rotation(
-                axis = [0, 1, 0],
-                theta = np.radians(self.eulers[1]), 
-                dtype = np.float32
-            )
+        rotation = pyrr.matrix44.create_from_eulers(
+            np.radians(self.eulers), dtype=np.float32
         )
-
+        model_transform = pyrr.matrix44.multiply(
+            m1=model_transform,
+            m2=rotation
+        )
+        translation = pyrr.matrix44.create_from_translation(
+            self.position, dtype=np.float32
+        )
         return pyrr.matrix44.multiply(
-            m1=model_transform, 
-            m2=pyrr.matrix44.create_from_translation(
-                vec=np.array(self.position),dtype=np.float32
-            )
+            m1=model_transform,
+            m2=translation
         )
 
 class App:
@@ -253,31 +280,39 @@ class App:
         glEnable(GL_DEPTH_TEST)
 
     def _create_assets(self) -> None:
-        # """
-        #     Create all of the assets needed for drawing.
-        # """
 
-        # self.cube = Entity(
-        #     position = [0,0,-8],
-        #     eulers = [0,0,0]
-        # )
-        # self.cube_mesh = Mesh("resources/sphere-fixed.obj")
-        # self.wood_texture = Material("resources/diffuse0.jpg")
+     # Define positions and files for multiple objects
 
- # Define positions and files for multiple objects
-        positions = [[0, 0, -8], [-3, 0, -5], [2, 0, -10]]
-        eulers = [[0, 0, 0], [0, 45, 0], [0, 90, 0]]
+
+        # positions = [[0, 0, -8], [-3, 0, -5], [2, 0, -10]]
+        # eulers = [[0, 0, 0], [0, 45, 0], [0, 90, 0]]
+        # models = ["sphere-fixed.obj", "sphere-fixed.obj", "suzanne.obj"]
+        # textures = ["diffuse0.jpg", "diffuse.png", "images1.jpeg"]
+
+        # for pos, euler, model_file, texture_file in zip(positions, eulers, models, textures):
+        #     entity = Entity(position=pos, eulers=euler)
+        #     mesh = Mesh(f"resources/{model_file}")
+        #     material = Material(f"resources/{texture_file}")
+        #     self.entities.append(entity)
+        #     self.meshes.append(mesh)
+        #     self.materials.append(material)
+        positions = [[0, 0, -8], [0, 0, -8], [0, 0, -8]]  # Start all at the same position
+        eulers = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         models = ["sphere-fixed.obj", "sphere-fixed.obj", "suzanne.obj"]
         textures = ["diffuse0.jpg", "diffuse.png", "images1.jpeg"]
+        orbit_params = [
+            (None, 0, 0),             # First object does not orbit
+            ([0, 0, -8], 5, 0.5),     # Second object orbits the first at radius 5
+            ([0, 0, -8], 2, 1.0)      # Third object also orbits the first (replace with dynamic reference to second if needed)
+        ]
 
-        for pos, euler, model_file, texture_file in zip(positions, eulers, models, textures):
-            entity = Entity(position=pos, eulers=euler)
+        for pos, euler, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, models, textures, orbit_params):
+            entity = Entity(position=pos, eulers=euler, orbit_center=orbit_center, orbit_radius=radius, orbit_speed=speed)
             mesh = Mesh(f"resources/{model_file}")
             material = Material(f"resources/{texture_file}")
             self.entities.append(entity)
             self.meshes.append(mesh)
             self.materials.append(material)
-
 
         self.shader = create_shader(
             vertex_filepath = "shaders/simple.vert", 
@@ -310,19 +345,45 @@ class App:
         self.modelMatrixLocation = glGetUniformLocation(self.shader,"model")
     
     def run(self) -> None:
-        """ Run the app """
+        # """ Run the app """
+
+        # running = True
+        # while (running):
+        #     #check events
+        #     for event in pg.event.get():
+        #         if (event.type == pg.QUIT):
+        #             running = False
+            
+        #     for entity in self.entities:
+        #         entity.update()
+            
+        #     #refresh screen
+        #     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        #     glUseProgram(self.shader)
+
+        #     for entity, mesh, material in zip(self.entities, self.meshes, self.materials):
+        #         glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, entity.get_model_transform())
+        #         material.use()
+        #         mesh.arm_for_drawing()
+        #         mesh.draw()
+
+        #     pg.display.flip()
+        #     self.clock.tick(60)
 
         running = True
-        while (running):
-            #check events
+        last_time = pg.time.get_ticks()
+        while running:
+            current_time = pg.time.get_ticks()
+            delta_time = (current_time - last_time) / 1000.0  # seconds
+            last_time = current_time
+
             for event in pg.event.get():
-                if (event.type == pg.QUIT):
+                if event.type == pg.QUIT:
                     running = False
-            
+
             for entity in self.entities:
-                entity.update()
-            
-            #refresh screen
+                entity.update(delta_time)
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glUseProgram(self.shader)
 
