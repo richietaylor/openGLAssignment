@@ -7,21 +7,7 @@ import math
 
 
 def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
-    """
-        Compile and link shader modules to make a shader program.
 
-        Parameters:
-
-            vertex_filepath: path to the text file storing the vertex
-                            source code
-            
-            fragment_filepath: path to the text file storing the
-                                fragment source code
-        
-        Returns:
-
-            A handle to the created shader program
-    """
 
     with open(vertex_filepath,'r') as f:
         vertex_src = f.readlines()
@@ -35,17 +21,6 @@ def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
     return shader
 
 def loadMesh(filename: str) -> list[float]:
-    """
-        Load a mesh from an obj file.
-
-        Parameters:
-
-            filename: the filename.
-        
-        Returns:
-
-            The loaded data, in a flattened format.
-    """
 
     v = []
     vt = []
@@ -79,9 +54,7 @@ def loadMesh(filename: str) -> list[float]:
     return vertices
     
 def read_vertex_data(words: list[str]) -> list[float]:
-    """
-        Returns a vertex description.
-    """
+
 
     return [
         float(words[1]),
@@ -90,9 +63,6 @@ def read_vertex_data(words: list[str]) -> list[float]:
     ]
     
 def read_texcoord_data(words: list[str]) -> list[float]:
-    """
-        Returns a texture coordinate description.
-    """
 
     return [
         float(words[1]),
@@ -100,9 +70,6 @@ def read_texcoord_data(words: list[str]) -> list[float]:
     ]
     
 def read_normal_data(words: list[str]) -> list[float]:
-    """
-        Returns a normal vector description.
-    """
 
     return [
         float(words[1]),
@@ -114,9 +81,6 @@ def read_face_data(
     words: list[str], 
     v: list[list[float]], vt: list[list[float]], 
     vn: list[list[float]], vertices: list[float]) -> None:
-    """
-        Reads an edgetable and makes a face from it.
-    """
 
     triangleCount = len(words) - 3
 
@@ -129,9 +93,7 @@ def read_face_data(
 def make_corner(corner_description: str, 
     v: list[list[float]], vt: list[list[float]], 
     vn: list[list[float]], vertices: list[float]) -> None:
-    """
-        Composes a flattened description of a vertex.
-    """
+
 
     v_vt_vn = corner_description.split("/")
     
@@ -184,10 +146,6 @@ class Entity:
 
 
 class App:
-    """
-        For now, the app will be handling everything.
-        Later on we'll break it into subcomponents.
-    """
 
 
     def __init__(self):
@@ -204,9 +162,7 @@ class App:
         self.running = False
     
     def _set_up_pygame(self) -> None:
-        """
-            Initialize and configure pygame.
-        """
+
 
         pg.init()
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
@@ -216,16 +172,12 @@ class App:
         pg.display.set_mode((1280 ,720), pg.OPENGL|pg.DOUBLEBUF)
 
     def _set_up_timer(self) -> None:
-        """
-            Set up the app's timer.
-        """
+
 
         self.clock = pg.time.Clock()
     
     def _set_up_opengl(self) -> None:
-        """
-            Configure any desired OpenGL options
-        """
+
 
         glClearColor(0.1, 0.2, 0.2, 1)
         glEnable(GL_DEPTH_TEST)
@@ -234,15 +186,15 @@ class App:
 
      # Define positions and files for multiple objects
 
-        positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]]  # Start all at the same position
+        positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]] 
         eulers = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         scales = [0.5, 0.2, 0.1]
         models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
         textures = ["yellow.png", "blue.png", "grey.jpeg"]
         orbit_params = [
-            (None, 0, 0),             # First object does not orbit
-            ([0, 0, -8], 2, 0.5),     # Second object orbits the first at radius 5
-            (None, 0.5, 3)      # Third object also orbits the first (replace with dynamic reference to second if needed)
+            (None, 0, 0),           
+            ([0, 0, -8], 2, 0.5),     
+            (None, 0.5, 3)      
         ]
 
 
@@ -259,9 +211,6 @@ class App:
             fragment_filepath = "shaders/simple.frag")
          
     def _set_onetime_uniforms(self) -> None:
-        """
-            Some shader data only needs to be set once.
-        """
 
         glUseProgram(self.shader)
         glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
@@ -276,9 +225,7 @@ class App:
         )
     
     def _get_uniform_locations(self) -> None:
-        """
-            Query and store the locations of shader uniforms
-        """
+
 
         glUseProgram(self.shader)
         self.modelMatrixLocation = glGetUniformLocation(self.shader,"model")
@@ -329,7 +276,7 @@ class App:
 
 
     def quit(self) -> None:
-        """ cleanup the app, run exit code """
+
 
         for mesh in self.meshes:
             mesh.destroy()
@@ -339,14 +286,8 @@ class App:
         pg.quit()
 
 class Mesh:
-    """
-        A mesh that can represent an obj model.
-    """
 
     def __init__(self, filename: str):
-        """
-            Initialize the mesh.
-        """
 
         # x, y, z, s, t, nx, ny, nz
         vertices = loadMesh(filename)
@@ -368,48 +309,30 @@ class Mesh:
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
     
     def arm_for_drawing(self) -> None:
-        """
-            Arm the triangle for drawing.
-        """
+
         glBindVertexArray(self.vao)
     
     def draw(self) -> None:
-        """
-            Draw the triangle.
-        """
 
         glDrawArrays(GL_TRIANGLES, 0, self.vertex_count)
 
     def destroy(self) -> None:
-        """
-            Free any allocated memory.
-        """
+
         
         glDeleteVertexArrays(1,(self.vao,))
         glDeleteBuffers(1,(self.vbo,))
     
     def destroy(self) -> None:
-        """
-            Free any allocated memory.
-        """
+
         
         glDeleteVertexArrays(1,(self.vao,))
         glDeleteBuffers(1,(self.vbo,))
 
 class Material:
-    """
-        A basic texture.
-    """
 
     
     def __init__(self, filepath: str):
-        """
-            Initialize and load the texture.
 
-            Parameters:
-
-                filepath: path to the image file.
-        """
 
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
@@ -424,17 +347,13 @@ class Material:
         glGenerateMipmap(GL_TEXTURE_2D)
 
     def use(self) -> None:
-        """
-            Arm the texture for drawing.
-        """
+
 
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D,self.texture)
 
     def destroy(self) -> None:
-        """
-            Free the texture.
-        """
+
 
         glDeleteTextures(1, (self.texture,))
 
