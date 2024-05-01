@@ -240,8 +240,10 @@ class Entity:
         translation_matrix = pyrr.matrix44.create_from_translation(self.position, dtype=np.float32)
 
         # Start with translation, then rotate, and finally scale (note the reverse application order)
-        model_transform = pyrr.matrix44.multiply(translation_matrix, rotation_matrix)
-        model_transform = pyrr.matrix44.multiply(model_transform, scale_matrix)
+        model_transform = pyrr.matrix44.multiply(scale_matrix, rotation_matrix)
+        # Then apply translation
+        model_transform = pyrr.matrix44.multiply(model_transform, translation_matrix)
+
         return model_transform
 
 
@@ -298,13 +300,13 @@ class App:
 
         positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]]  # Start all at the same position
         eulers = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        scales = [2, 1, 1]
+        scales = [0.1, 0.1, 0.1]
         models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
         textures = ["sun.jpg", "earth.png", "moon.png"]
         orbit_params = [
             (None, 0, 0),             # First object does not orbit
-            ([0, 0, -8], 5, 0.5),     # Second object orbits the first at radius 5
-            (None, 3, 1.0)      # Third object also orbits the first (replace with dynamic reference to second if needed)
+            ([0, 0, -8], 2, 0.5),     # Second object orbits the first at radius 5
+            (None, 1, 1.0)      # Third object also orbits the first (replace with dynamic reference to second if needed)
         ]
 
         # for pos, euler, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, models, textures, orbit_params):
