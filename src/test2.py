@@ -5,7 +5,7 @@ import numpy as np
 import pyrr
 import math
 
-
+# Create and compile shaders
 def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
 
 
@@ -20,6 +20,8 @@ def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
     
     return shader
 
+
+# load a mesh from an OBJ file
 def loadMesh(filename: str) -> list[float]:
 
     v = []
@@ -52,7 +54,9 @@ def loadMesh(filename: str) -> list[float]:
             line = file.readline()
 
     return vertices
-    
+
+ # Helper functions to parse vertex, texture, and normal data from OBJ file  
+
 def read_vertex_data(words: list[str]) -> list[float]:
 
 
@@ -77,6 +81,8 @@ def read_normal_data(words: list[str]) -> list[float]:
         float(words[3])
     ]
 
+# Function to process face data and link vertices, textures, and normals
+
 def read_face_data(
     words: list[str], 
     v: list[list[float]], vt: list[list[float]], 
@@ -90,6 +96,8 @@ def read_face_data(
         make_corner(words[2 + i], v, vt, vn, vertices)
         make_corner(words[3 + i], v, vt, vn, vertices)
     
+# Combines vertex, texture, and normal data into a single array for OpenGL
+
 def make_corner(corner_description: str, 
     v: list[list[float]], vt: list[list[float]], 
     vn: list[list[float]], vertices: list[float]) -> None:
@@ -104,7 +112,8 @@ def make_corner(corner_description: str,
     for element in vn[int(v_vt_vn[2]) - 1]:
         vertices.append(element)
 
-
+# Represents an object in 3D space, including its position, rotation, and scale
+class Entity:
 class Entity:
     def __init__(self, position, eulers, scale=1, orbit_center=None, orbit_radius=0, orbit_speed=0):
         self.position = np.array(position, dtype=np.float32)
@@ -115,21 +124,22 @@ class Entity:
         self.orbit_speed = orbit_speed
         self.orbit_angle = 0
 
+    # Updates the entity's position and rotation
     def update(self, delta_time):
-        # Update orbiting position if applicable
+        
         if self.orbit_center is not None and self.orbit_radius > 0:
             self.orbit_angle += self.orbit_speed * delta_time
             self.position[0] = self.orbit_center[0] + self.orbit_radius * math.cos(self.orbit_angle)
             self.position[1] = self.orbit_center[1] + self.orbit_radius * math.sin(self.orbit_angle)
 
 
-        # Update rotation
-        self.eulers[1] += 0.25 * delta_time  # Increment rotation about Y-axis
+        
+        self.eulers[1] += 0.25 * delta_time  
         if self.eulers[1] > 360:
             self.eulers[1] -= 360
 
 
-
+    # Computes the transformation matrix for rendering
     def get_model_transform(self):
         # Scale -> Rotate -> Translate
         scale_matrix = pyrr.matrix44.create_from_scale([self.scale, self.scale, self.scale], dtype=np.float32)
@@ -144,7 +154,7 @@ class Entity:
         return model_transform
 
 
-
+# Main application class managing game state
 class App:
 
 
@@ -161,6 +171,7 @@ class App:
         self._get_uniform_locations()
         self.running = False
     
+    # Initializes Pygame with OpenGL settings
     def _set_up_pygame(self) -> None:
 
 
@@ -171,11 +182,12 @@ class App:
                                     pg.GL_CONTEXT_PROFILE_CORE)
         pg.display.set_mode((1280 ,720), pg.OPENGL|pg.DOUBLEBUF)
 
+
+# Sets up the main application clock
     def _set_up_timer(self) -> None:
-
-
         self.clock = pg.time.Clock()
-    
+
+# Configures OpenGL rendering settings
     def _set_up_opengl(self) -> None:
 
 
@@ -210,6 +222,7 @@ class App:
             vertex_filepath = "shaders/simple.vert", 
             fragment_filepath = "shaders/simple.frag")
          
+    # Sets projection matrix and other one-time OpenGL settings
     def _set_onetime_uniforms(self) -> None:
 
         glUseProgram(self.shader)
@@ -224,12 +237,14 @@ class App:
             1, GL_FALSE, projection_transform
         )
     
+    # Retrieves and stores uniform locations from the shader
     def _get_uniform_locations(self) -> None:
 
 
         glUseProgram(self.shader)
         self.modelMatrixLocation = glGetUniformLocation(self.shader,"model")
     
+    # Main loop that updates and renders the game
     def run(self):
             keep_running = True
             last_time = pg.time.get_ticks()
@@ -274,7 +289,7 @@ class App:
                 pg.display.flip()
                 self.clock.tick(60)  # This controls frame rate; it might be wise to separate drawing and updating rates.
 
-
+# Cleanup function to free resources
     def quit(self) -> None:
 
 
@@ -289,7 +304,6 @@ class Mesh:
 
     def __init__(self, filename: str):
 
-        # x, y, z, s, t, nx, ny, nz
         vertices = loadMesh(filename)
         self.vertex_count = len(vertices)//8
         vertices = np.array(vertices, dtype=np.float32)
@@ -297,19 +311,18 @@ class Mesh:
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
 
-        #Vertices
+        # Vertices
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-        #position
+        # Position
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
-        #texture
+        # Texture
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
     
     def arm_for_drawing(self) -> None:
-
         glBindVertexArray(self.vao)
     
     def draw(self) -> None:
@@ -317,14 +330,10 @@ class Mesh:
         glDrawArrays(GL_TRIANGLES, 0, self.vertex_count)
 
     def destroy(self) -> None:
-
-        
         glDeleteVertexArrays(1,(self.vao,))
         glDeleteBuffers(1,(self.vbo,))
     
-    def destroy(self) -> None:
-
-        
+    def destroy(self) -> None:        
         glDeleteVertexArrays(1,(self.vao,))
         glDeleteBuffers(1,(self.vbo,))
 
@@ -332,8 +341,6 @@ class Material:
 
     
     def __init__(self, filepath: str):
-
-
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
@@ -347,14 +354,10 @@ class Material:
         glGenerateMipmap(GL_TEXTURE_2D)
 
     def use(self) -> None:
-
-
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D,self.texture)
 
     def destroy(self) -> None:
-
-
         glDeleteTextures(1, (self.texture,))
 
 my_app = App()
