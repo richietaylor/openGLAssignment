@@ -1,26 +1,25 @@
-PyOpenGL Skeleton Code
+# Basic Rendering and Transformations - The Sun, Earth and Moon :moon: 
 
-Setup assumes that you are using a UNIX-based OS with python3 and python3-venv installed.
+By Richard Taylor (TYLRIC007)
 
-To build the virtual environment and install necessary packages:
+***
 
-```
-> make
-```
-
-Note: You can also put any packages you want to use in the requirements.txt file.
-
-To activate the virtual environment:
+Hi, Welcome to my assignment 1. To set up, all you need to do is run (for Windows):
 
 ```
-> source ./venv/bin/activate
+pip install -r requirements.txt
 ```
 
-To run the skeleton code:
+For the requirements, and 
 
 ```
-> python ./src/main.py
+> py src/main.py
 ```
 
-You should see the following output (once you've implemented the Window rendering):
-![example output for PyOpenGL skeleton code](./resources/example_output.png)
+to run the main file. Once the program is running, press ***SPACE*** to begin the animation. ***SPACE*** can then be used to pause and play the animation. Additionally, the ***UP ARROW*** and ***DOWN ARROW*** can be used to speed up and slow down the orbit of the Earth respectivley, and you can do likewise with the ***LEFT ARROW*** and the ***RIGHT ARROW*** for the orbit of the Moon.
+
+You can also quit anytime by pressing ***Q***.
+
+Thank you :smile:
+
+***
