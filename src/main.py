@@ -208,7 +208,7 @@ class App:
         positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]] 
         eulers = [[0, 0, 0], [90, 0, 0], [0, 0, 0]]
         rotation_speeds = [[10,10,10],[0,0,60],[10,10,10]]
-        scales = [1, 0.4, 0.2]
+        scales = [0.5, 0.2, 0.1]
         models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
         textures = ["sun.png", "earth.png", "moon.png"]
         orbit_params = [
@@ -256,6 +256,7 @@ class App:
     def run(self):
             keep_running = True
             anim_running = True
+            target_entity = 0
             last_time = pg.time.get_ticks()
             while keep_running:
                 current_time = pg.time.get_ticks()
@@ -288,7 +289,13 @@ class App:
                                 self.entities[2].rotation_speed = moon_rotaion
 
                             anim_running = not anim_running
-
+                            
+                        if event.key == pg.K_TAB:
+                            target_entity+=1
+                            if target_entity> len(self.entities)-1:
+                                target_entity=0
+                            self.camera.set_target(self.entities[target_entity])
+                            # print(f"Camera now targeting entity {current_target_index}")
                         # if event.key == pg.K_LEFT:
                         #     self.camera.update(d_azimuth=-1)  # Rotate left around the target
                         # elif event.key == pg.K_RIGHT:
@@ -304,22 +311,31 @@ class App:
                 
                 # Check for continuous key presses
                 keys = pg.key.get_pressed()
+                if keys[pg.K_a]:
+                    self.camera.update(d_azimuth=-2)  # Rotate left around the target
+                if keys[pg.K_d]:
+                    self.camera.update(d_azimuth=2)   # Rotate right around the target
+                if keys[pg.K_w]:
+                    self.camera.update(d_elevation=2)  # Rotate up around the target
+                if keys[pg.K_s]:
+                    self.camera.update(d_elevation=-2) # Rotate down around the target
                 if keys[pg.K_LEFT]:
-                    self.camera.update(d_azimuth=-0.5)  # Rotate left around the target
+                    self.camera.update(d_distance=-0.5)  # Zoom in
                 if keys[pg.K_RIGHT]:
-                    self.camera.update(d_azimuth=0.5)   # Rotate right around the target
-                if keys[pg.K_UP]:
-                    self.camera.update(d_elevation=0.5)  # Rotate up around the target
-                if keys[pg.K_DOWN]:
-                    self.camera.update(d_elevation=-0.5) # Rotate down around the target
-                if keys[pg.K_PAGEUP]:
-                    self.camera.update(d_distance=-0.1)  # Zoom in
-                if keys[pg.K_PAGEDOWN]:
-                    self.camera.update(d_distance=0.1)   # Zoom out
-                # self.update_scene(delta_time)
-                # self.render_scene()        
-                # Set the camera's view matrix in your render loop
-                if self.camera:  # Check if the camera has been initialized
+                    self.camera.update(d_distance=0.5)   # Zoom out
+
+                if keys[pg.K_j]:
+                    self.entities[1].orbit_speed+=0.1
+                if keys[pg.K_n]:
+                    self.entities[1].orbit_speed+=-0.1
+
+                if keys[pg.K_k]:
+                    self.entities[2].orbit_speed+=0.1
+                if keys[pg.K_m]:
+                    self.entities[2].orbit_speed+=-0.1
+
+
+                if self.camera:  
                         view_matrix = self.camera.get_view_matrix()
                         glUniformMatrix4fv(glGetUniformLocation(self.shader, "view"), 1, GL_FALSE, view_matrix)
                 
@@ -423,11 +439,15 @@ class Camera:
         self.up = np.array([0, 1, 0], dtype=np.float32)
         self.calculate_position()
 
+    def set_target(self, new_entity):
+        self.entity = new_entity
+        self.calculate_position()
+
     def calculate_position(self):
         if self.entity:
-            self.target = self.entity.position  # Update target to entity's position
+            self.target = self.entity.position 
         else:
-            self.target = np.array([0, 0, 0], dtype=np.float32)  # Fallback if no entity is set
+            self.target = np.array([0, 0, 0], dtype=np.float32)  
 
         az = np.radians(self.azimuth)
         el = np.radians(self.elevation)
@@ -444,14 +464,8 @@ class Camera:
     def update(self, d_azimuth=0, d_elevation=0, d_distance=0):
         self.azimuth += d_azimuth
         self.elevation = max(-89, min(89, self.elevation + d_elevation))
-        self.distance = max(1, self.distance + d_distance)
+        self.distance = max(1, min(50, self.distance + d_distance))
         self.calculate_position()
-
-
-
-
-
-
 
 
 my_app = App()
