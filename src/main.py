@@ -298,18 +298,17 @@ class App:
                 # Check for continuous key presses
                 keys = pg.key.get_pressed()
                 if keys[pg.K_LEFT]:
-                    self.camera.update(d_azimuth=-1 * delta_time * 10)  # Rotate left, adjust speed as needed
+                    self.camera.update(d_azimuth=-0.5)  # Rotate left around the target
                 if keys[pg.K_RIGHT]:
-                    self.camera.update(d_azimuth=1 * delta_time * 10)   # Rotate right
+                    self.camera.update(d_azimuth=0.5)   # Rotate right around the target
                 if keys[pg.K_UP]:
-                    self.camera.update(d_elevation=1 * delta_time * 10)  # Rotate up
+                    self.camera.update(d_elevation=0.5)  # Rotate up around the target
                 if keys[pg.K_DOWN]:
-                    self.camera.update(d_elevation=-1 * delta_time * 10) # Rotate down
+                    self.camera.update(d_elevation=-0.5) # Rotate down around the target
                 if keys[pg.K_PAGEUP]:
-                    self.camera.update(d_distance=-0.5 * delta_time * 10)  # Zoom in
+                    self.camera.update(d_distance=-0.1)  # Zoom in
                 if keys[pg.K_PAGEDOWN]:
-                    self.camera.update(d_distance=0.5 * delta_time * 10)   # Zoom out
-
+                    self.camera.update(d_distance=0.1)   # Zoom out
                 # self.update_scene(delta_time)
                 # self.render_scene()        
                 # Set the camera's view matrix in your render loop
@@ -414,7 +413,7 @@ class Camera:
         self.distance = distance
         self.azimuth = azimuth
         self.elevation = elevation
-        self.up = np.array([0, 1, 0], dtype=np.float32)  # Assuming Y is up
+        self.up = np.array([0, 1, 0], dtype=np.float32)  # Y is up
         self.calculate_position()
 
     def calculate_position(self):
@@ -422,21 +421,25 @@ class Camera:
         az = np.radians(self.azimuth)
         el = np.radians(self.elevation)
         
-        # Calculate camera position relative to the target
+        # Calculate camera position relative to the target using spherical coordinates
         x = self.distance * np.cos(el) * np.sin(az)
         y = self.distance * np.sin(el)
         z = self.distance * np.cos(el) * np.cos(az)
+        
+        # Calculate the camera's global position by adding the target position
         self.position = self.target + np.array([x, y, z], dtype=np.float32)
 
     def update(self, d_azimuth=0, d_elevation=0, d_distance=0):
         self.azimuth += d_azimuth
-        self.elevation = max(-89, min(89, self.elevation + d_elevation))
-        self.distance = max(1, self.distance + d_distance)
+        self.elevation += d_elevation
+        self.elevation = max(-89, min(89, self.elevation))  # Limit elevation to prevent flipping
+        self.distance += d_distance
+        self.distance = max(1, self.distance)  # Prevent the camera from going inside the target
         self.calculate_position()
-
 
     def get_view_matrix(self):
         return pyrr.matrix44.create_look_at(self.position, self.target, self.up, dtype=np.float32)
+
 
 
 
