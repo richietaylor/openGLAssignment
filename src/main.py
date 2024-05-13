@@ -282,32 +282,40 @@ class App:
 
                             anim_running = not anim_running
 
-                        # elif event.key == pg.K_UP:
-                        #     self.entities[1].orbit_speed += 1  # Increase orbit speed of second object
-                        # elif event.key == pg.K_DOWN:
-                        #     self.entities[1].orbit_speed -= 1  # Decrease orbit speed of second object
+                        # if event.key == pg.K_LEFT:
+                        #     self.camera.update(d_azimuth=-1)  # Rotate left around the target
                         # elif event.key == pg.K_RIGHT:
-                        #     self.entities[2].orbit_speed += 1  # Increase orbit speed of third object
-                        # elif event.key == pg.K_LEFT:
-                        #     self.entities[2].orbit_speed -= 1  # Decrease orbit speed of third object
-                        elif event.key == pg.K_q:
-                            keep_running = False
-                        if event.key == pg.K_LEFT:
-                            self.camera.update(d_azimuth=-5, d_elevation=0, d_distance=0)
-                        elif event.key == pg.K_RIGHT:
-                            self.camera.update(d_azimuth=5, d_elevation=0, d_distance=0)
-                        elif event.key == pg.K_UP:
-                            self.camera.update(d_azimuth=0, d_elevation=5, d_distance=0)
-                        elif event.key == pg.K_DOWN:
-                            self.camera.update(d_azimuth=0, d_elevation=-5, d_distance=0)
-                        elif event.key == pg.K_PAGEUP:
-                            self.camera.update(d_azimuth=0, d_elevation=0, d_distance=-1)
-                        elif event.key == pg.K_PAGEDOWN:
-                            self.camera.update(d_azimuth=0, d_elevation=0, d_distance=1)
+                        #     self.camera.update(d_azimuth=1)   # Rotate right around the target
+                        # elif event.key == pg.K_UP:
+                        #     self.camera.update(d_elevation=1)  # Rotate up around the target
+                        # elif event.key == pg.K_DOWN:
+                        #     self.camera.update(d_elevation=-1) # Rotate down around the target
+                        # elif event.key == pg.K_PAGEUP:
+                        #     self.camera.update(d_distance=-0.5)  # Zoom in
+                        # elif event.key == pg.K_PAGEDOWN:
+                        #     self.camera.update(d_distance=0.5)   # Zoom out
+                
+                # Check for continuous key presses
+                keys = pg.key.get_pressed()
+                if keys[pg.K_LEFT]:
+                    self.camera.update(d_azimuth=-1 * delta_time * 10)  # Rotate left, adjust speed as needed
+                if keys[pg.K_RIGHT]:
+                    self.camera.update(d_azimuth=1 * delta_time * 10)   # Rotate right
+                if keys[pg.K_UP]:
+                    self.camera.update(d_elevation=1 * delta_time * 10)  # Rotate up
+                if keys[pg.K_DOWN]:
+                    self.camera.update(d_elevation=-1 * delta_time * 10) # Rotate down
+                if keys[pg.K_PAGEUP]:
+                    self.camera.update(d_distance=-0.5 * delta_time * 10)  # Zoom in
+                if keys[pg.K_PAGEDOWN]:
+                    self.camera.update(d_distance=0.5 * delta_time * 10)   # Zoom out
 
+                # self.update_scene(delta_time)
+                # self.render_scene()        
                 # Set the camera's view matrix in your render loop
                 view_matrix = self.camera.get_view_matrix()
                 glUniformMatrix4fv(glGetUniformLocation(self.shader, "view"), 1, GL_FALSE, view_matrix)
+
 
                 if self.running:
                     for entity in self.entities:
@@ -414,22 +422,55 @@ class Camera:
         az = np.radians(self.azimuth)
         el = np.radians(self.elevation)
         
-        # Calculate camera position
+        # Calculate camera position relative to the target
         x = self.distance * np.cos(el) * np.sin(az)
         y = self.distance * np.sin(el)
         z = self.distance * np.cos(el) * np.cos(az)
         self.position = self.target + np.array([x, y, z], dtype=np.float32)
 
-    def update(self, d_azimuth, d_elevation, d_distance):
+    def update(self, d_azimuth=0, d_elevation=0, d_distance=0):
         self.azimuth += d_azimuth
-        self.elevation += d_elevation
-        self.elevation = max(-89, min(89, self.elevation))  # Limit elevation to prevent flipping
-        self.distance += d_distance
-        self.distance = max(1, self.distance)  # Prevents getting too close
+        self.elevation = max(-89, min(89, self.elevation + d_elevation))
+        self.distance = max(1, self.distance + d_distance)
         self.calculate_position()
+
 
     def get_view_matrix(self):
         return pyrr.matrix44.create_look_at(self.position, self.target, self.up, dtype=np.float32)
+
+
+
+
+# class Camera:
+#     def __init__(self, target, distance, azimuth, elevation):
+#         self.target = np.array(target, dtype=np.float32)
+#         self.distance = distance
+#         self.azimuth = azimuth
+#         self.elevation = elevation
+#         self.up = np.array([0, 1, 0], dtype=np.float32)  # Assuming Y is up
+#         self.calculate_position()
+
+#     def calculate_position(self):
+#         # Convert angles from degrees to radians
+#         az = np.radians(self.azimuth)
+#         el = np.radians(self.elevation)
+        
+#         # Calculate camera position
+#         x = self.distance * np.cos(el) * np.sin(az)
+#         y = self.distance * np.sin(el)
+#         z = self.distance * np.cos(el) * np.cos(az)
+#         self.position = self.target + np.array([x, y, z], dtype=np.float32)
+
+#     def update(self, d_azimuth, d_elevation, d_distance):
+#         self.azimuth += d_azimuth
+#         self.elevation += d_elevation
+#         self.elevation = max(-89, min(89, self.elevation))  # Limit elevation to prevent flipping
+#         self.distance += d_distance
+#         self.distance = max(1, self.distance)  # Prevents getting too close
+#         self.calculate_position()
+
+#     def get_view_matrix(self):
+#         return pyrr.matrix44.create_look_at(self.position, self.target, self.up, dtype=np.float32)
 
 
 my_app = App()
