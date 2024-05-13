@@ -169,7 +169,14 @@ class App:
         self._set_onetime_uniforms()
         self._get_uniform_locations()
         self.running = True
-        self.camera = Camera(target=[0, 0, 0], distance=10, azimuth=0, elevation=0)
+        # my_camera = Camera(entity=self.entities[0], distance=10, azimuth=0, elevation=0)
+
+        if self.entities:
+            self.camera = Camera(entity=self.entities[0], distance=10, azimuth=0, elevation=0)
+        else:
+            # Fallback to a fixed position if no entities are available
+            self.camera = Camera(entity=None, distance=10, azimuth=0, elevation=0)
+
     
     # Initializes Pygame with OpenGL settings
     def _set_up_pygame(self) -> None:
@@ -312,10 +319,10 @@ class App:
                 # self.update_scene(delta_time)
                 # self.render_scene()        
                 # Set the camera's view matrix in your render loop
-                view_matrix = self.camera.get_view_matrix()
-                glUniformMatrix4fv(glGetUniformLocation(self.shader, "view"), 1, GL_FALSE, view_matrix)
-
-
+                if self.camera:  # Check if the camera has been initialized
+                        view_matrix = self.camera.get_view_matrix()
+                        glUniformMatrix4fv(glGetUniformLocation(self.shader, "view"), 1, GL_FALSE, view_matrix)
+                
                 if self.running:
                     for entity in self.entities:
                         entity.update(delta_time)
@@ -408,72 +415,43 @@ class Material:
 
 
 class Camera:
-    def __init__(self, target, distance, azimuth, elevation):
-        self.target = np.array(target, dtype=np.float32)
+    def __init__(self, entity, distance, azimuth, elevation):
+        self.entity = entity  # The target is now an entity
         self.distance = distance
         self.azimuth = azimuth
         self.elevation = elevation
-        self.up = np.array([0, 1, 0], dtype=np.float32)  # Y is up
+        self.up = np.array([0, 1, 0], dtype=np.float32)
         self.calculate_position()
 
     def calculate_position(self):
-        # Convert angles from degrees to radians
+        if self.entity:
+            self.target = self.entity.position  # Update target to entity's position
+        else:
+            self.target = np.array([0, 0, 0], dtype=np.float32)  # Fallback if no entity is set
+
         az = np.radians(self.azimuth)
         el = np.radians(self.elevation)
-        
-        # Calculate camera position relative to the target using spherical coordinates
+
         x = self.distance * np.cos(el) * np.sin(az)
         y = self.distance * np.sin(el)
         z = self.distance * np.cos(el) * np.cos(az)
-        
-        # Calculate the camera's global position by adding the target position
-        self.position = self.target + np.array([x, y, z], dtype=np.float32)
 
-    def update(self, d_azimuth=0, d_elevation=0, d_distance=0):
-        self.azimuth += d_azimuth
-        self.elevation += d_elevation
-        self.elevation = max(-89, min(89, self.elevation))  # Limit elevation to prevent flipping
-        self.distance += d_distance
-        self.distance = max(1, self.distance)  # Prevent the camera from going inside the target
-        self.calculate_position()
+        self.position = self.target + np.array([x, y, z], dtype=np.float32)
 
     def get_view_matrix(self):
         return pyrr.matrix44.create_look_at(self.position, self.target, self.up, dtype=np.float32)
 
+    def update(self, d_azimuth=0, d_elevation=0, d_distance=0):
+        self.azimuth += d_azimuth
+        self.elevation = max(-89, min(89, self.elevation + d_elevation))
+        self.distance = max(1, self.distance + d_distance)
+        self.calculate_position()
 
 
 
 
-# class Camera:
-#     def __init__(self, target, distance, azimuth, elevation):
-#         self.target = np.array(target, dtype=np.float32)
-#         self.distance = distance
-#         self.azimuth = azimuth
-#         self.elevation = elevation
-#         self.up = np.array([0, 1, 0], dtype=np.float32)  # Assuming Y is up
-#         self.calculate_position()
 
-#     def calculate_position(self):
-#         # Convert angles from degrees to radians
-#         az = np.radians(self.azimuth)
-#         el = np.radians(self.elevation)
-        
-#         # Calculate camera position
-#         x = self.distance * np.cos(el) * np.sin(az)
-#         y = self.distance * np.sin(el)
-#         z = self.distance * np.cos(el) * np.cos(az)
-#         self.position = self.target + np.array([x, y, z], dtype=np.float32)
 
-#     def update(self, d_azimuth, d_elevation, d_distance):
-#         self.azimuth += d_azimuth
-#         self.elevation += d_elevation
-#         self.elevation = max(-89, min(89, self.elevation))  # Limit elevation to prevent flipping
-#         self.distance += d_distance
-#         self.distance = max(1, self.distance)  # Prevents getting too close
-#         self.calculate_position()
-
-#     def get_view_matrix(self):
-#         return pyrr.matrix44.create_look_at(self.position, self.target, self.up, dtype=np.float32)
 
 
 my_app = App()
