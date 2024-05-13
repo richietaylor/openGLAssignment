@@ -13,7 +13,7 @@ pip install -r requirements.txt
 For the requirements, and 
 
 ```
-> py src/main.py
+py src/main.py
 ```
 
 to run the main file. Once the program is running, press ***SPACE*** to begin the animation. ***SPACE*** can then be used to pause and play the animation. Additionally, the ***UP ARROW*** and ***DOWN ARROW*** can be used to speed up and slow down the orbit of the Earth respectivley, and you can do likewise with the ***LEFT ARROW*** and the ***RIGHT ARROW*** for the orbit of the Moon.

@@ -5,6 +5,7 @@ import numpy as np
 import pyrr
 import math
 
+
 # Create and compile shaders
 def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
 
@@ -51,6 +52,7 @@ def loadMesh(filename: str) -> list[float]:
 
  # Helper functions to parse vertex, texture, and normal data from OBJ file  
 
+
 def read_vertex_data(words: list[str]) -> list[float]:
 
 
@@ -60,6 +62,7 @@ def read_vertex_data(words: list[str]) -> list[float]:
         float(words[3])
     ]
     
+
 def read_texcoord_data(words: list[str]) -> list[float]:
 
     return [
@@ -67,6 +70,7 @@ def read_texcoord_data(words: list[str]) -> list[float]:
         float(words[2])
     ]
     
+
 def read_normal_data(words: list[str]) -> list[float]:
 
     return [
@@ -75,8 +79,8 @@ def read_normal_data(words: list[str]) -> list[float]:
         float(words[3])
     ]
 
-# Function to process face data and link vertices, textures, and normals
 
+# Function to process face data and link vertices, textures, and normals
 def read_face_data(
     words: list[str], 
     v: list[list[float]], vt: list[list[float]], 
@@ -90,8 +94,8 @@ def read_face_data(
         make_corner(words[2 + i], v, vt, vn, vertices)
         make_corner(words[3 + i], v, vt, vn, vertices)
     
-# Combines vertex, texture, and normal data into a single array for OpenGL
 
+# Combines vertex, texture, and normal data into a single array for OpenGL
 def make_corner(corner_description: str, 
     v: list[list[float]], vt: list[list[float]], 
     vn: list[list[float]], vertices: list[float]) -> None:
@@ -106,13 +110,15 @@ def make_corner(corner_description: str,
     for element in vn[int(v_vt_vn[2]) - 1]:
         vertices.append(element)
 
+
 # Represents an object in 3D space, including its position, rotation, and scale
 class Entity:
-    def __init__(self, position, eulers, scale=1, orbit_center=None, orbit_radius=0, orbit_speed=0):
+    def __init__(self, position, eulers, scale=1, orbit_center=None, orbit_radius=0, orbit_speed=0, rotation_speed=[0, 0, 0]):
         self.position = np.array(position, dtype=np.float32)
         self.eulers = np.array(eulers, dtype=np.float32)
         self.scale = scale
         self.orbit_center = np.array(orbit_center, dtype=np.float32) if orbit_center is not None else None
+        self.rotation_speed = np.array(rotation_speed, dtype=np.float32)  
         self.orbit_radius = orbit_radius
         self.orbit_speed = orbit_speed
         self.orbit_angle = 0
@@ -125,11 +131,11 @@ class Entity:
             self.position[0] = self.orbit_center[0] + self.orbit_radius * math.cos(self.orbit_angle)
             self.position[1] = self.orbit_center[1] + self.orbit_radius * math.sin(self.orbit_angle)
 
-
-        
-        self.eulers[1] += 0.25 * delta_time  
-        if self.eulers[1] > 360:
-            self.eulers[1] -= 360
+            # self.eulers[0] += 1 * delta_time  
+            # if self.eulers[1] > 360:
+            #     self.eulers[1] -= 360
+        self.eulers += self.rotation_speed * delta_time
+        self.eulers %= 360 
 
 
     # Computes the transformation matrix for rendering
@@ -162,7 +168,8 @@ class App:
         self._create_assets()
         self._set_onetime_uniforms()
         self._get_uniform_locations()
-        self.running = False
+        self.running = True
+        self.camera = Camera(target=[0, 0, 0], distance=10, azimuth=0, elevation=0)
     
     # Initializes Pygame with OpenGL settings
     def _set_up_pygame(self) -> None:
@@ -173,7 +180,7 @@ class App:
         pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
         pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK,
                                     pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode((1280 ,720), pg.OPENGL|pg.DOUBLEBUF)
+        pg.display.set_mode((1920, 1080), pg.OPENGL|pg.DOUBLEBUF)
 
 
 # Sets up the main application clock
@@ -192,10 +199,11 @@ class App:
      # Define positions and files for multiple objects
 
         positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]] 
-        eulers = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        scales = [0.5, 0.2, 0.1]
+        eulers = [[0, 0, 0], [90, 0, 0], [0, 0, 0]]
+        rotation_speeds = [[10,10,10],[0,0,60],[10,10,10]]
+        scales = [1, 0.4, 0.2]
         models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
-        textures = ["yellow.png", "blue.png", "grey.jpeg"]
+        textures = ["sun.png", "earth.png", "moon.png"]
         orbit_params = [
             (None, 0, 0),           
             ([0, 0, -8], 2, 0.5),     
@@ -203,8 +211,8 @@ class App:
         ]
 
 
-        for pos, euler, scale, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, scales, models, textures, orbit_params):
-            entity = Entity(position=pos, eulers=euler, scale=scale, orbit_center=orbit_center, orbit_radius=radius, orbit_speed=speed)
+        for pos, euler, rotation_speed,scale, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, rotation_speeds, scales, models, textures, orbit_params):
+            entity = Entity(position=pos, eulers=euler, rotation_speed=rotation_speed, scale=scale, orbit_center=orbit_center, orbit_radius=radius, orbit_speed=speed, )
             mesh = Mesh(f"resources/{model_file}")
             material = Material(f"resources/{texture_file}")
             self.entities.append(entity)
@@ -222,7 +230,7 @@ class App:
         glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
 
         projection_transform = pyrr.matrix44.create_perspective_projection(
-            fovy = 45, aspect = 1280/720, 
+            fovy = 45, aspect = 1920/1080, 
             near = 0.1, far = 50, dtype=np.float32
         )
         glUniformMatrix4fv(
@@ -240,6 +248,7 @@ class App:
     # Main loop that updates and renders the game
     def run(self):
             keep_running = True
+            anim_running = True
             last_time = pg.time.get_ticks()
             while keep_running:
                 current_time = pg.time.get_ticks()
@@ -250,18 +259,55 @@ class App:
                     if event.type == pg.QUIT:
                         keep_running = False
                     elif event.type == pg.KEYDOWN:
+                        if anim_running:
+                            earth_orbit = self.entities[1].orbit_speed
+                            moon_orbit = self.entities[2].orbit_speed
+                            sun_rotation = self.entities[0].rotation_speed
+                            earth_rotation = self.entities[1].rotation_speed                            
+                            moon_rotaion = self.entities[2].rotation_speed
+
                         if event.key == pg.K_SPACE:  # Toggle animation on/off
-                            self.running = not self.running
-                        elif event.key == pg.K_UP:
-                            self.entities[1].orbit_speed += 0.1  # Increase orbit speed of second object
-                        elif event.key == pg.K_DOWN:
-                            self.entities[1].orbit_speed -= 0.1  # Decrease orbit speed of second object
-                        elif event.key == pg.K_RIGHT:
-                            self.entities[2].orbit_speed += 0.1  # Increase orbit speed of third object
-                        elif event.key == pg.K_LEFT:
-                            self.entities[2].orbit_speed -= 0.1  # Decrease orbit speed of third object
+                            if anim_running:
+                                self.entities[1].orbit_speed = 0
+                                self.entities[2].orbit_speed = 0
+                                self.entities[0].rotation_speed = 0
+                                self.entities[1].rotation_speed = 0
+                                self.entities[2].rotation_speed = 0
+                            else:
+                                self.entities[1].orbit_speed = earth_orbit
+                                self.entities[2].orbit_speed = moon_orbit
+                                self.entities[0].rotation_speed = sun_rotation
+                                self.entities[1].rotation_speed = earth_rotation
+                                self.entities[2].rotation_speed = moon_rotaion
+
+                            anim_running = not anim_running
+
+                        # elif event.key == pg.K_UP:
+                        #     self.entities[1].orbit_speed += 1  # Increase orbit speed of second object
+                        # elif event.key == pg.K_DOWN:
+                        #     self.entities[1].orbit_speed -= 1  # Decrease orbit speed of second object
+                        # elif event.key == pg.K_RIGHT:
+                        #     self.entities[2].orbit_speed += 1  # Increase orbit speed of third object
+                        # elif event.key == pg.K_LEFT:
+                        #     self.entities[2].orbit_speed -= 1  # Decrease orbit speed of third object
                         elif event.key == pg.K_q:
                             keep_running = False
+                        if event.key == pg.K_LEFT:
+                            self.camera.update(d_azimuth=-5, d_elevation=0, d_distance=0)
+                        elif event.key == pg.K_RIGHT:
+                            self.camera.update(d_azimuth=5, d_elevation=0, d_distance=0)
+                        elif event.key == pg.K_UP:
+                            self.camera.update(d_azimuth=0, d_elevation=5, d_distance=0)
+                        elif event.key == pg.K_DOWN:
+                            self.camera.update(d_azimuth=0, d_elevation=-5, d_distance=0)
+                        elif event.key == pg.K_PAGEUP:
+                            self.camera.update(d_azimuth=0, d_elevation=0, d_distance=-1)
+                        elif event.key == pg.K_PAGEDOWN:
+                            self.camera.update(d_azimuth=0, d_elevation=0, d_distance=1)
+
+                # Set the camera's view matrix in your render loop
+                view_matrix = self.camera.get_view_matrix()
+                glUniformMatrix4fv(glGetUniformLocation(self.shader, "view"), 1, GL_FALSE, view_matrix)
 
                 if self.running:
                     for entity in self.entities:
@@ -284,14 +330,13 @@ class App:
 
 # Cleanup function to free resources
     def quit(self) -> None:
-
-
         for mesh in self.meshes:
             mesh.destroy()
         for material in self.materials:
             material.destroy()
         glDeleteProgram(self.shader)
         pg.quit()
+
 
 class Mesh:
 
@@ -330,6 +375,7 @@ class Mesh:
         glDeleteVertexArrays(1,(self.vao,))
         glDeleteBuffers(1,(self.vbo,))
 
+
 class Material:
 
     
@@ -352,6 +398,39 @@ class Material:
 
     def destroy(self) -> None:
         glDeleteTextures(1, (self.texture,))
+
+
+class Camera:
+    def __init__(self, target, distance, azimuth, elevation):
+        self.target = np.array(target, dtype=np.float32)
+        self.distance = distance
+        self.azimuth = azimuth
+        self.elevation = elevation
+        self.up = np.array([0, 1, 0], dtype=np.float32)  # Assuming Y is up
+        self.calculate_position()
+
+    def calculate_position(self):
+        # Convert angles from degrees to radians
+        az = np.radians(self.azimuth)
+        el = np.radians(self.elevation)
+        
+        # Calculate camera position
+        x = self.distance * np.cos(el) * np.sin(az)
+        y = self.distance * np.sin(el)
+        z = self.distance * np.cos(el) * np.cos(az)
+        self.position = self.target + np.array([x, y, z], dtype=np.float32)
+
+    def update(self, d_azimuth, d_elevation, d_distance):
+        self.azimuth += d_azimuth
+        self.elevation += d_elevation
+        self.elevation = max(-89, min(89, self.elevation))  # Limit elevation to prevent flipping
+        self.distance += d_distance
+        self.distance = max(1, self.distance)  # Prevents getting too close
+        self.calculate_position()
+
+    def get_view_matrix(self):
+        return pyrr.matrix44.create_look_at(self.position, self.target, self.up, dtype=np.float32)
+
 
 my_app = App()
 my_app.run()
