@@ -7,19 +7,43 @@ import math
 
 
 # Create and compile shaders
-def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
+# def create_shader(vertex_filepath: str, fragment_filepath: str) -> int:
 
 
-    with open(vertex_filepath,'r') as f:
-        vertex_src = f.readlines()
+#     with open(vertex_filepath,'r') as f:
+#         vertex_src = f.readlines()
 
-    with open(fragment_filepath,'r') as f:
-        fragment_src = f.readlines()
+#     with open(fragment_filepath,'r') as f:
+#         fragment_src = f.readlines()
     
-    shader = compileProgram(compileShader(vertex_src, GL_VERTEX_SHADER),
-                            compileShader(fragment_src, GL_FRAGMENT_SHADER))
+#     shader = compileProgram(compileShader(vertex_src, GL_VERTEX_SHADER),
+#                             compileShader(fragment_src, GL_FRAGMENT_SHADER))
     
-    return shader
+#     return shader
+class Shader:
+    def __init__(self, vertex_filepath, fragment_filepath):
+        self.program = self.create_shader(vertex_filepath, fragment_filepath)
+
+    def create_shader(self, vertex_filepath, fragment_filepath):
+        with open(vertex_filepath, 'r') as f:
+            vertex_src = f.readlines()
+
+        with open(fragment_filepath, 'r') as f:
+            fragment_src = f.readlines()
+
+        shader = compileProgram(compileShader(vertex_src, GL_VERTEX_SHADER),
+                                compileShader(fragment_src, GL_FRAGMENT_SHADER))
+
+        return shader
+
+    def use(self):
+        glUseProgram(self.program)
+
+    def get_uniform_location(self, name):
+        return glGetUniformLocation(self.program, name)
+
+    def set_uniform_matrix4fv(self, name, matrix):
+        glUniformMatrix4fv(self.get_uniform_location(name), 1, GL_FALSE, matrix)
 
 
 # load a mesh from an OBJ file
@@ -170,6 +194,12 @@ class App:
         self._get_uniform_locations()
         self.running = True
         # my_camera = Camera(entity=self.entities[0], distance=10, azimuth=0, elevation=0)
+        
+        # Orbiting light goes here because
+        self.light_orbit_center = np.array([0.0, 0.0, -8.0], dtype=np.float32)
+        self.light_orbit_radius = 10.0
+        self.light_orbit_speed = 0.2
+        self.light_orbit_angle = 0.0
 
         if self.entities:
             self.camera = Camera(entity=self.entities[0], distance=10, azimuth=0, elevation=0)
@@ -177,7 +207,15 @@ class App:
             # Fallback to a fixed position if no entities are available
             self.camera = Camera(entity=None, distance=10, azimuth=0, elevation=0)
 
-    
+    # def update_light_position(self, delta_time):
+    #     self.light_orbit_angle += self.light_orbit_speed * delta_time
+    #     self.lights[1]['position'][0] = self.light_orbit_center[0] + self.light_orbit_radius * math.cos(self.light_orbit_angle)
+    #     self.lights[1]['position'][2] = self.light_orbit_center[2] + self.light_orbit_radius * math.sin(self.light_orbit_angle)
+    def update_light_position(self, delta_time):
+        self.light_orbit_angle += self.light_orbit_speed * delta_time
+        self.lights[1]['position'][0] = self.light_orbit_center[0] + self.light_orbit_radius * math.cos(self.light_orbit_angle)
+        self.lights[1]['position'][2] = self.light_orbit_center[2] + self.light_orbit_radius * math.sin(self.light_orbit_angle)
+
     # Initializes Pygame with OpenGL settings
     def _set_up_pygame(self) -> None:
 
@@ -198,7 +236,7 @@ class App:
     def _set_up_opengl(self) -> None:
 
 
-        glClearColor(0.1, 0.2, 0.2, 1)
+        glClearColor(0, 0, 0, 1)
         glEnable(GL_DEPTH_TEST)
 
     def _create_assets(self) -> None:
@@ -226,31 +264,72 @@ class App:
             self.meshes.append(mesh)
             self.materials.append(material)
 
-        self.shader = create_shader(
-            vertex_filepath = "shaders/simple.vert", 
-            fragment_filepath = "shaders/simple.frag")
+        # self.shader = create_shader(
+        #     vertex_filepath = "shaders/simple.vert", 
+        #     fragment_filepath = "shaders/simple.frag")
+        self.shader = Shader(vertex_filepath="shaders/simple.vert", fragment_filepath="shaders/simple.frag")
+        
+        
+
+        # self.lights = [
+        #     {'position': [0.0, 0.0, -8.0], 'color': [1.0, 1.0, 0.8]},  # Sun
+        #     {'position': [10.0, 10.0, 10.0], 'color': [0.8, 0.8, 1.0]}  # Additional light
+        # ]
+        
+        # # Material properties
+        # self.material_ambient = [0.1, 0.1, 0.1]
+        # self.material_diffuse = [0.6, 0.6, 0.6]
+        # self.material_specular = [0.5, 0.5, 0.5]
+        # self.material_shininess = 32.0        
+
+        self.lights = [
+        {'position': [0.0, 0.0, -8.0], 'color': [5.0,5.0,1.0]},  # Sun
+        {'position': [10.0, 0.0, -8.0], 'color': [5.0,5.0,5.0]}   # Additional light
+        ]
+
+        self.material_ambient = [0.3, 0.3, 0.3]
+        self.material_diffuse = [0.7, 0.7, 0.7]
+        self.material_specular = [1.0, 1.0, 1.0]
+        self.material_shininess = 32.0
+
          
     # Sets projection matrix and other one-time OpenGL settings
     def _set_onetime_uniforms(self) -> None:
 
-        glUseProgram(self.shader)
-        glUniform1i(glGetUniformLocation(self.shader, "imageTexture"), 0)
+        # glUseProgram(self.shader)
+        self.shader.use()
+        glUniform1i(glGetUniformLocation(self.shader.program, "imageTexture"), 0)
 
         projection_transform = pyrr.matrix44.create_perspective_projection(
             fovy = 45, aspect = 1920/1080, 
             near = 0.1, far = 50, dtype=np.float32
         )
-        glUniformMatrix4fv(
-            glGetUniformLocation(self.shader,"projection"),
-            1, GL_FALSE, projection_transform
-        )
+        # glUniformMatrix4fv(
+        #     glGetUniformLocation(self.shader,"projection"),
+        #     1, GL_FALSE, projection_transform
+        # )
+        self.shader.set_uniform_matrix4fv("projection", projection_transform)
+
+
+        for i, light in enumerate(self.lights):
+            glUniform3fv(glGetUniformLocation(self.shader.program, f"lights[{i}].position"), 1, light['position'])
+            glUniform3fv(glGetUniformLocation(self.shader.program, f"lights[{i}].color"), 1, light['color'])
+
+        # Pass material properties
+        glUniform3fv(glGetUniformLocation(self.shader.program, "materialAmbient"), 1, self.material_ambient)
+        glUniform3fv(glGetUniformLocation(self.shader.program, "materialDiffuse"), 1, self.material_diffuse)
+        glUniform3fv(glGetUniformLocation(self.shader.program, "materialSpecular"), 1, self.material_specular)
+        glUniform1f(glGetUniformLocation(self.shader.program, "materialShininess"), self.material_shininess)
+
     
     # Retrieves and stores uniform locations from the shader
     def _get_uniform_locations(self) -> None:
+        self.shader.use()
+        self.modelMatrixLocation = glGetUniformLocation(self.shader.program, "model")
 
 
-        glUseProgram(self.shader)
-        self.modelMatrixLocation = glGetUniformLocation(self.shader,"model")
+        # glUseProgram(self.shader)
+        # self.modelMatrixLocation = glGetUniformLocation(self.shader,"model")
     
     # Main loop that updates and renders the game
     def run(self):
@@ -337,20 +416,26 @@ class App:
 
                 if self.camera:  
                         view_matrix = self.camera.get_view_matrix()
-                        glUniformMatrix4fv(glGetUniformLocation(self.shader, "view"), 1, GL_FALSE, view_matrix)
+                        glUniformMatrix4fv(glGetUniformLocation(self.shader.program, "view"), 1, GL_FALSE, view_matrix)
+                        glUniform3fv(glGetUniformLocation(self.shader.program, "viewPos"), 1, self.camera.position)
                 
                 if self.running:
                     for entity in self.entities:
                         entity.update(delta_time)
 
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                    glUseProgram(self.shader)
+                    glUseProgram(self.shader.program)
 
                     for entity, mesh, material in zip(self.entities, self.meshes, self.materials):
                         glUniformMatrix4fv(self.modelMatrixLocation, 1, GL_FALSE, entity.get_model_transform())
                         material.use()
                         mesh.arm_for_drawing()
                         mesh.draw()
+
+                    for i, light in enumerate(self.lights):
+                        glUniform3fv(glGetUniformLocation(self.shader.program, f"lights[{i}].position"), 1, light['position'])
+                        glUniform3fv(glGetUniformLocation(self.shader.program, f"lights[{i}].color"), 1, light['color'])
+
 
                     if len(self.entities) > 2:
                         self.entities[2].orbit_center = np.copy(self.entities[1].position)
@@ -364,7 +449,7 @@ class App:
             mesh.destroy()
         for material in self.materials:
             material.destroy()
-        glDeleteProgram(self.shader)
+        glDeleteProgram(self.shader.program)
         pg.quit()
 
 
