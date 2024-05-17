@@ -283,7 +283,7 @@ class App:
         # self.material_shininess = 32.0        
 
         self.lights = [
-        {'position': [0.0, 0.0, -8.0], 'color': [5.0,5.0,1.0]},  # Sun
+        {'position': [0.0, 0.0, -8.0], 'color': [5.0,3.0,2.0]},  # Sun
         {'position': [10.0, 0.0, -8.0], 'color': [5.0,5.0,5.0]}   # Additional light
         ]
 
