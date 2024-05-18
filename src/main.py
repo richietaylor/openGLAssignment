@@ -197,7 +197,7 @@ class App:
         
         # Orbiting light goes here because
         self.light_orbit_center = np.array([0.0, 0.0, -8.0], dtype=np.float32)
-        self.light_orbit_radius = 4.0
+        self.light_orbit_radius = 10.0
         self.light_orbit_speed = 0.2
         self.light_orbit_angle = 0.0
         
@@ -244,17 +244,35 @@ class App:
 
      # Define positions and files for multiple objects
 
-        positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]] 
-        eulers = [[0, 0, 0], [90, 0, 0], [0, 0, 0]]
-        rotation_speeds = [[10,10,10],[0,0,60],[10,10,10]]
-        scales = [0.5, 0.2, 0.1]
-        models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
-        textures = ["sun.png", "earth.png", "moon.png"]
+        # positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8]] 
+        # eulers = [[0, 0, 0], [90, 0, 0], [0, 0, 0]]
+        # rotation_speeds = [[10,10,10],[0,0,60],[10,10,10]]
+        # scales = [0.5, 0.2, 0.1]
+        # models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]
+        # textures = ["sun.png", "earth.png", "moon.png"]
+        # orbit_params = [
+        #     (None, 0, 0),           
+        #     ([0, 0, -8], 2, 0.5),     
+        #     (None, 0.5, 3)      
+        # ]
+
+        positions = [[0, 0, -8], [5, 0, -8], [10, 0, -8], [15, 0, -8], [20, 0, -8], [25, 0, -8]]  # Added another planet position
+        eulers = [[0, 0, 0], [90, 0, 0], [0, 0, 0], [45, 0, 0], [0,0,0], [0, 90,0]]  # Added another planet orientation
+        rotation_speeds = [[10, 10, 10], [0, 0, 60], [10, 10, 10], [5, 5, 5], [15, 15,15], [5,5,5]]  # Added another planet rotation speed
+        scales = [0.8, 0.3, 0.1, 0.2, 0.5, 0.4]  # Added another planet scale
+        models = ["sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj", "sphere-fixed.obj"]  # Model for the new planet
+        textures = ["sun.png", "earth.png", "moon.png", "mars.png", "juipter.png", "uranus.png"]  # Texture for the new planet
         orbit_params = [
             (None, 0, 0),           
             ([0, 0, -8], 2, 0.5),     
-            (None, 0.5, 3)      
+            (None, 0.5, 3),
+            ([0, 0, -8], 4, 0.2),
+            ([0, 0, -8], 7, 0.3),
+            ([0, 0, -8], 11, 0.1),
+            # ([0, 0, -8], 2, 0.5),
+
         ]
+
 
 
         for pos, euler, rotation_speed,scale, model_file, texture_file, (orbit_center, radius, speed) in zip(positions, eulers, rotation_speeds, scales, models, textures, orbit_params):
@@ -285,7 +303,7 @@ class App:
 
         self.lights = [
             {'position': [0.0, 0.0, -8.0], 'color': [5.0, 3.0, 1.0]},  # Sun
-            {'position': [10.0, 10.0, 10.0], 'color': [0.0,1.0,1.5]}  # Additional light
+            {'position': [10.0, 10.0, 10.0], 'color': [0.0,0.0,10.0]}  # Additional light
         ]
 
         self.material_ambient = [0.3, 0.3, 0.3]
@@ -350,23 +368,61 @@ class App:
                         if anim_running:
                             earth_orbit = self.entities[1].orbit_speed
                             moon_orbit = self.entities[2].orbit_speed
+                            mars_orbit = self.entities[3].orbit_speed
+                            juipter_orbit = self.entities[4].orbit_speed
+                            uranus_orbit = self.entities[5].orbit_speed
+
+
                             sun_rotation = self.entities[0].rotation_speed
                             earth_rotation = self.entities[1].rotation_speed                            
                             moon_rotaion = self.entities[2].rotation_speed
+                            mars_rotation = self.entities[3].rotation_speed
+                            juipter_rotation = self.entities[4].rotation_speed                            
+                            uranus_rotaion = self.entities[5].rotation_speed
+                                                      
+
+                            
 
                         if event.key == pg.K_SPACE:  # Toggle animation on/off
                             if anim_running:
                                 self.entities[1].orbit_speed = 0
                                 self.entities[2].orbit_speed = 0
+                                self.entities[3].orbit_speed = 0
+                                self.entities[4].orbit_speed = 0
+                                self.entities[5].orbit_speed = 0
+                                
+
+
+
                                 self.entities[0].rotation_speed = 0
                                 self.entities[1].rotation_speed = 0
                                 self.entities[2].rotation_speed = 0
+                                self.entities[3].rotation_speed = 0
+                                self.entities[4].rotation_speed = 0
+                                self.entities[5].rotation_speed = 0
+                                
                             else:
                                 self.entities[1].orbit_speed = earth_orbit
                                 self.entities[2].orbit_speed = moon_orbit
+
+                                self.entities[3].orbit_speed = mars_orbit
+                                self.entities[4].orbit_speed = juipter_orbit
+                                self.entities[5].orbit_speed = uranus_orbit
+                                
+
+
+
+
+
                                 self.entities[0].rotation_speed = sun_rotation
                                 self.entities[1].rotation_speed = earth_rotation
                                 self.entities[2].rotation_speed = moon_rotaion
+
+                                self.entities[3].rotation_speed = mars_rotation
+                                self.entities[4].rotation_speed = juipter_rotation
+                                self.entities[5].rotation_speed = uranus_rotaion
+
+                                
 
                             anim_running = not anim_running
                             
