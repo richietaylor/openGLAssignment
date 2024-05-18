@@ -32,17 +32,17 @@ void main()
     for (int i = 0; i < 2; i++) {
         vec3 lightDir = normalize(lights[i].position - fragPos);
         
-        // Ambient
-        ambient += materialAmbient * lights[i].color * 0.3; // Increase ambient intensity
+        
+        ambient += materialAmbient * lights[i].color * 0.3; 
 
-        // Diffuse
+        
         float diff = max(dot(norm, lightDir), 0.0);
-        diffuse += materialDiffuse * diff * lights[i].color * 1.0; // Increase diffuse intensity
+        diffuse += materialDiffuse * diff * lights[i].color * 1.0; 
 
-        // Specular
+        
         vec3 reflectDir = reflect(-lightDir, norm);
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
-        specular += materialSpecular * spec * lights[i].color * 0.5; // Increase specular intensity
+        specular += materialSpecular * spec * lights[i].color * 0.5; 
     }
 
     vec3 lighting = ambient + diffuse + specular;

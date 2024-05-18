@@ -1,4 +1,4 @@
-# Basic Rendering and Transformations - The Sun, Earth and Moon :moon: 
+# Shading: The Sun, Earth and Moon (and others!) :moon: 
 
 By Richard Taylor (TYLRIC007)
 
@@ -16,9 +16,19 @@ For the requirements, and
 py src/main.py
 ```
 
-to run the main file. Once the program is running, press ***SPACE*** to begin the animation. ***SPACE*** can then be used to pause and play the animation. Additionally, the ***UP ARROW*** and ***DOWN ARROW*** can be used to speed up and slow down the orbit of the Earth respectivley, and you can do likewise with the ***LEFT ARROW*** and the ***RIGHT ARROW*** for the orbit of the Moon.
 
-You can also quit anytime by pressing ***Q***.
+## Controls
+
+- ***Space***: Start stop animation (the moving light will not stop so you can see it better in action)
+- ***Q***: Quit
+- ***WASD***: Rotate up, down, left and right around the target planet
+- ***TAB***: Switch target planet
+- ***Left and Right arrows***: Zoom in and out of the scene
+- ***K***: Speed up Moon orbit speed
+- ***M***: Slow down Moon orbit speed
+- ***J***: Speed up Earth orbit speed
+- ***N***: Slow down Earth orbit speed
+
 
 Thank you :smile:
 

@@ -195,7 +195,7 @@ class App:
         self.running = True
         # my_camera = Camera(entity=self.entities[0], distance=10, azimuth=0, elevation=0)
         
-        # Orbiting light goes here because
+        # Orbiting light goes here because I said so
         self.light_orbit_center = np.array([0.0, 0.0, -8.0], dtype=np.float32)
         self.light_orbit_radius = 10.0
         self.light_orbit_speed = 0.2
@@ -431,6 +431,9 @@ class App:
                             if target_entity> len(self.entities)-1:
                                 target_entity=0
                             self.camera.set_target(self.entities[target_entity])
+                        
+                        if event.key == pg.K_q:
+                            keep_running = False
                             # print(f"Camera now targeting entity {current_target_index}")
                         # if event.key == pg.K_LEFT:
                         #     self.camera.update(d_azimuth=-1)  # Rotate left around the target
@@ -502,7 +505,7 @@ class App:
                         self.entities[2].orbit_center = np.copy(self.entities[1].position)
 
                 pg.display.flip()
-                self.clock.tick(60)  # This controls frame rate; it might be wise to separate drawing and updating rates.
+                self.clock.tick(60)  # This controls frame rate
 
 # Cleanup function to free resources
     def quit(self) -> None:
@@ -581,7 +584,7 @@ class Material:
 
 class Camera:
     def __init__(self, entity, distance, azimuth, elevation):
-        self.entity = entity  # The target is now an entity
+        self.entity = entity  # The target is an entity
         self.distance = distance
         self.azimuth = azimuth
         self.elevation = elevation
