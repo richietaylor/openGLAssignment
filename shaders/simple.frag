@@ -2,7 +2,7 @@
 
 in vec2 fragTexCoords;
 in vec3 fragNormal;
-in vec3 fragPosition;
+in vec3 fragPos;
 
 out vec4 color;
 
@@ -27,27 +27,25 @@ void main()
     vec3 specular = vec3(0.0);
 
     vec3 norm = normalize(fragNormal);
-    vec3 viewDir = normalize(viewPos - fragPosition);
+    vec3 viewDir = normalize(viewPos - fragPos);
 
     for (int i = 0; i < 2; i++) {
-        ambient += materialAmbient * lights[i].color * 0.1; // reduce ambient light influence
+        vec3 lightDir = normalize(lights[i].position - fragPos);
+        
+        // Ambient
+        ambient += materialAmbient * lights[i].color * 0.3; // Increase ambient intensity
 
-        vec3 lightDir = normalize(lights[i].position - fragPosition);
+        // Diffuse
         float diff = max(dot(norm, lightDir), 0.0);
-        diffuse += materialDiffuse * diff * lights[i].color * 0.5; // reduce diffuse light influence
+        diffuse += materialDiffuse * diff * lights[i].color * 1.0; // Increase diffuse intensity
 
+        // Specular
         vec3 reflectDir = reflect(-lightDir, norm);
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
-        specular += materialSpecular * spec * lights[i].color * 0.3; // reduce specular light influence
+        specular += materialSpecular * spec * lights[i].color * 0.5; // Increase specular intensity
     }
-    
-    color = vec4(ambient, 1.0);  // Check ambient contribution
-    color = vec4(diffuse, 1.0);  // Check diffuse contribution
-    color = vec4(specular, 1.0); // Check specular contribution
 
     vec3 lighting = ambient + diffuse + specular;
-
-    // Combine with texture
     vec4 texColor = texture(imageTexture, fragTexCoords);
     color = texColor * vec4(lighting, 1.0);
 }

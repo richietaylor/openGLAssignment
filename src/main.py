@@ -197,7 +197,7 @@ class App:
         
         # Orbiting light goes here because
         self.light_orbit_center = np.array([0.0, 0.0, -8.0], dtype=np.float32)
-        self.light_orbit_radius = 10.0
+        self.light_orbit_radius = 4.0
         self.light_orbit_speed = 0.2
         self.light_orbit_angle = 0.0
         
@@ -213,7 +213,7 @@ class App:
     #     self.lights[1]['position'][0] = self.light_orbit_center[0] + self.light_orbit_radius * math.cos(self.light_orbit_angle)
     #     self.lights[1]['position'][2] = self.light_orbit_center[2] + self.light_orbit_radius * math.sin(self.light_orbit_angle)
     def update_light_position(self, delta_time):
-        self.light_orbit_angle += self.light_orbit_speed * delta_time
+        self.light_orbit_angle += self.light_orbit_speed * delta_time * 10 # Maybe change this later
         self.lights[1]['position'][0] = self.light_orbit_center[0] + self.light_orbit_radius * math.cos(self.light_orbit_angle)
         self.lights[1]['position'][2] = self.light_orbit_center[2] + self.light_orbit_radius * math.sin(self.light_orbit_angle)
         # print(f"Moving light position: {self.lights[1]['position']}") 
@@ -284,8 +284,8 @@ class App:
         # self.material_shininess = 32.0        
 
         self.lights = [
-        {'position': [0.0, 0.0, -8.0], 'color': [5.0,5.0,5.0]},  # Sun
-        {'position': [10.0, 0.0, -6.0], 'color': [1.0,1.0,1.0]}   # Additional light
+            {'position': [0.0, 0.0, -8.0], 'color': [5.0, 3.0, 1.0]},  # Sun
+            {'position': [10.0, 10.0, 10.0], 'color': [0.0,1.0,1.5]}  # Additional light
         ]
 
         self.material_ambient = [0.3, 0.3, 0.3]
